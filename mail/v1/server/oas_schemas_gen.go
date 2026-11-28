@@ -16,292 +16,6 @@ func (s *ErrorStatusCode) Error() string {
 	return fmt.Sprintf("code %d: %+v", s.StatusCode, s.Response)
 }
 
-type AccessTokenAuth struct {
-	Token string
-	Roles []string
-}
-
-// GetToken returns the value of Token.
-func (s *AccessTokenAuth) GetToken() string {
-	return s.Token
-}
-
-// GetRoles returns the value of Roles.
-func (s *AccessTokenAuth) GetRoles() []string {
-	return s.Roles
-}
-
-// SetToken sets the value of Token.
-func (s *AccessTokenAuth) SetToken(val string) {
-	s.Token = val
-}
-
-// SetRoles sets the value of Roles.
-func (s *AccessTokenAuth) SetRoles(val []string) {
-	s.Roles = val
-}
-
-// Ref: #/components/schemas/AccountMailboxResource
-type AccountMailboxResource struct {
-	// Personal mailbox identifier; null until activated.
-	ID NilUUID `json:"id"`
-	// Allocated personal email address; null while unallocated, pending, or failed.
-	Address          NilString        `json:"address"`
-	AllocationStatus AllocationStatus `json:"allocation_status"`
-	AllocationError  NilString        `json:"allocation_error"`
-	// Account's external email address synchronized from IAM that receives forwarded inbound mail.
-	ForwardTo NilString `json:"forward_to"`
-	// Forwarding and reply-by-email require the external email address to be verified.
-	ForwardEmailVerified bool           `json:"forward_email_verified"`
-	ForwardingEnabled    bool           `json:"forwarding_enabled"`
-	SpamFilterMode       SpamFilterMode `json:"spam_filter_mode"`
-	OutboundStatus       OutboundStatus `json:"outbound_status"`
-	PauseReason          NilPauseReason `json:"pause_reason"`
-	ReplyDailyLimit      int64          `json:"reply_daily_limit"`
-	ReplyUsedToday       int64          `json:"reply_used_today"`
-	UnreadCount          int64          `json:"unread_count"`
-	CreatedAt            NilDateTime    `json:"created_at"`
-	UpdatedAt            NilDateTime    `json:"updated_at"`
-}
-
-// GetID returns the value of ID.
-func (s *AccountMailboxResource) GetID() NilUUID {
-	return s.ID
-}
-
-// GetAddress returns the value of Address.
-func (s *AccountMailboxResource) GetAddress() NilString {
-	return s.Address
-}
-
-// GetAllocationStatus returns the value of AllocationStatus.
-func (s *AccountMailboxResource) GetAllocationStatus() AllocationStatus {
-	return s.AllocationStatus
-}
-
-// GetAllocationError returns the value of AllocationError.
-func (s *AccountMailboxResource) GetAllocationError() NilString {
-	return s.AllocationError
-}
-
-// GetForwardTo returns the value of ForwardTo.
-func (s *AccountMailboxResource) GetForwardTo() NilString {
-	return s.ForwardTo
-}
-
-// GetForwardEmailVerified returns the value of ForwardEmailVerified.
-func (s *AccountMailboxResource) GetForwardEmailVerified() bool {
-	return s.ForwardEmailVerified
-}
-
-// GetForwardingEnabled returns the value of ForwardingEnabled.
-func (s *AccountMailboxResource) GetForwardingEnabled() bool {
-	return s.ForwardingEnabled
-}
-
-// GetSpamFilterMode returns the value of SpamFilterMode.
-func (s *AccountMailboxResource) GetSpamFilterMode() SpamFilterMode {
-	return s.SpamFilterMode
-}
-
-// GetOutboundStatus returns the value of OutboundStatus.
-func (s *AccountMailboxResource) GetOutboundStatus() OutboundStatus {
-	return s.OutboundStatus
-}
-
-// GetPauseReason returns the value of PauseReason.
-func (s *AccountMailboxResource) GetPauseReason() NilPauseReason {
-	return s.PauseReason
-}
-
-// GetReplyDailyLimit returns the value of ReplyDailyLimit.
-func (s *AccountMailboxResource) GetReplyDailyLimit() int64 {
-	return s.ReplyDailyLimit
-}
-
-// GetReplyUsedToday returns the value of ReplyUsedToday.
-func (s *AccountMailboxResource) GetReplyUsedToday() int64 {
-	return s.ReplyUsedToday
-}
-
-// GetUnreadCount returns the value of UnreadCount.
-func (s *AccountMailboxResource) GetUnreadCount() int64 {
-	return s.UnreadCount
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *AccountMailboxResource) GetCreatedAt() NilDateTime {
-	return s.CreatedAt
-}
-
-// GetUpdatedAt returns the value of UpdatedAt.
-func (s *AccountMailboxResource) GetUpdatedAt() NilDateTime {
-	return s.UpdatedAt
-}
-
-// SetID sets the value of ID.
-func (s *AccountMailboxResource) SetID(val NilUUID) {
-	s.ID = val
-}
-
-// SetAddress sets the value of Address.
-func (s *AccountMailboxResource) SetAddress(val NilString) {
-	s.Address = val
-}
-
-// SetAllocationStatus sets the value of AllocationStatus.
-func (s *AccountMailboxResource) SetAllocationStatus(val AllocationStatus) {
-	s.AllocationStatus = val
-}
-
-// SetAllocationError sets the value of AllocationError.
-func (s *AccountMailboxResource) SetAllocationError(val NilString) {
-	s.AllocationError = val
-}
-
-// SetForwardTo sets the value of ForwardTo.
-func (s *AccountMailboxResource) SetForwardTo(val NilString) {
-	s.ForwardTo = val
-}
-
-// SetForwardEmailVerified sets the value of ForwardEmailVerified.
-func (s *AccountMailboxResource) SetForwardEmailVerified(val bool) {
-	s.ForwardEmailVerified = val
-}
-
-// SetForwardingEnabled sets the value of ForwardingEnabled.
-func (s *AccountMailboxResource) SetForwardingEnabled(val bool) {
-	s.ForwardingEnabled = val
-}
-
-// SetSpamFilterMode sets the value of SpamFilterMode.
-func (s *AccountMailboxResource) SetSpamFilterMode(val SpamFilterMode) {
-	s.SpamFilterMode = val
-}
-
-// SetOutboundStatus sets the value of OutboundStatus.
-func (s *AccountMailboxResource) SetOutboundStatus(val OutboundStatus) {
-	s.OutboundStatus = val
-}
-
-// SetPauseReason sets the value of PauseReason.
-func (s *AccountMailboxResource) SetPauseReason(val NilPauseReason) {
-	s.PauseReason = val
-}
-
-// SetReplyDailyLimit sets the value of ReplyDailyLimit.
-func (s *AccountMailboxResource) SetReplyDailyLimit(val int64) {
-	s.ReplyDailyLimit = val
-}
-
-// SetReplyUsedToday sets the value of ReplyUsedToday.
-func (s *AccountMailboxResource) SetReplyUsedToday(val int64) {
-	s.ReplyUsedToday = val
-}
-
-// SetUnreadCount sets the value of UnreadCount.
-func (s *AccountMailboxResource) SetUnreadCount(val int64) {
-	s.UnreadCount = val
-}
-
-// SetCreatedAt sets the value of CreatedAt.
-func (s *AccountMailboxResource) SetCreatedAt(val NilDateTime) {
-	s.CreatedAt = val
-}
-
-// SetUpdatedAt sets the value of UpdatedAt.
-func (s *AccountMailboxResource) SetUpdatedAt(val NilDateTime) {
-	s.UpdatedAt = val
-}
-
-type AllocateMailboxCreated MailboxResource
-
-func (*AllocateMailboxCreated) allocateMailboxRes() {}
-
-type AllocateMailboxOK MailboxResource
-
-func (*AllocateMailboxOK) allocateMailboxRes() {}
-
-// Ref: #/components/schemas/AllocateMailboxRequestBody
-type AllocateMailboxRequestBody struct {
-	// Active service account in the current project to allocate a default mailbox for.
-	ServiceAccountID uuid.UUID `json:"service_account_id"`
-}
-
-// GetServiceAccountID returns the value of ServiceAccountID.
-func (s *AllocateMailboxRequestBody) GetServiceAccountID() uuid.UUID {
-	return s.ServiceAccountID
-}
-
-// SetServiceAccountID sets the value of ServiceAccountID.
-func (s *AllocateMailboxRequestBody) SetServiceAccountID(val uuid.UUID) {
-	s.ServiceAccountID = val
-}
-
-// Current address allocation state for a mailbox.
-// Ref: #/components/schemas/AllocationStatus
-type AllocationStatus string
-
-const (
-	AllocationStatusUnallocated AllocationStatus = "unallocated"
-	AllocationStatusPending     AllocationStatus = "pending"
-	AllocationStatusAllocated   AllocationStatus = "allocated"
-	AllocationStatusFailed      AllocationStatus = "failed"
-	AllocationStatusReleased    AllocationStatus = "released"
-)
-
-// AllValues returns all AllocationStatus values.
-func (AllocationStatus) AllValues() []AllocationStatus {
-	return []AllocationStatus{
-		AllocationStatusUnallocated,
-		AllocationStatusPending,
-		AllocationStatusAllocated,
-		AllocationStatusFailed,
-		AllocationStatusReleased,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s AllocationStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case AllocationStatusUnallocated:
-		return []byte(s), nil
-	case AllocationStatusPending:
-		return []byte(s), nil
-	case AllocationStatusAllocated:
-		return []byte(s), nil
-	case AllocationStatusFailed:
-		return []byte(s), nil
-	case AllocationStatusReleased:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *AllocationStatus) UnmarshalText(data []byte) error {
-	switch AllocationStatus(data) {
-	case AllocationStatusUnallocated:
-		*s = AllocationStatusUnallocated
-		return nil
-	case AllocationStatusPending:
-		*s = AllocationStatusPending
-		return nil
-	case AllocationStatusAllocated:
-		*s = AllocationStatusAllocated
-		return nil
-	case AllocationStatusFailed:
-		*s = AllocationStatusFailed
-		return nil
-	case AllocationStatusReleased:
-		*s = AllocationStatusReleased
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
 // `attachment` for regular downloadable files; `inline` for embedded MIME parts such as `cid:` images.
 // Ref: #/components/schemas/AttachmentDisposition
 type AttachmentDisposition string
@@ -656,7 +370,7 @@ func (s *CreateEnablementRequestBody) SetCheckout(val OptCheckoutOptions) {
 	s.Checkout = val
 }
 
-// The enablement, `pending` until its order is accepted, together with its Checkout Session.
+// The enablement together with its Checkout Session when billing checkout is required.
 // Ref: #/components/schemas/CreateEnablementResponseBody
 type CreateEnablementResponseBody struct {
 	Enablement EnablementResource `json:"enablement"`
@@ -698,6 +412,33 @@ func (s *CreateEnablementResponseBody) SetOrderID(val NilUUID) {
 
 func (*CreateEnablementResponseBody) createEnablementRes() {}
 
+// Ref: #/components/schemas/CreateInboxRequestBody
+type CreateInboxRequestBody struct {
+	// Target project member's IAM user ID. Omit to provision an inbox for the caller.
+	UserID      OptString `json:"user_id"`
+	DisplayName OptString `json:"display_name"`
+}
+
+// GetUserID returns the value of UserID.
+func (s *CreateInboxRequestBody) GetUserID() OptString {
+	return s.UserID
+}
+
+// GetDisplayName returns the value of DisplayName.
+func (s *CreateInboxRequestBody) GetDisplayName() OptString {
+	return s.DisplayName
+}
+
+// SetUserID sets the value of UserID.
+func (s *CreateInboxRequestBody) SetUserID(val OptString) {
+	s.UserID = val
+}
+
+// SetDisplayName sets the value of DisplayName.
+func (s *CreateInboxRequestBody) SetDisplayName(val OptString) {
+	s.DisplayName = val
+}
+
 // Pagination metadata for keyset traversal. Pass next_cursor as cursor to read the following page;
 // null means there is no following page.
 // Ref: #/components/schemas/CursorPagination
@@ -725,9 +466,6 @@ func (s *CursorPagination) SetPageSize(val int64) {
 func (s *CursorPagination) SetNextCursor(val OptNilString) {
 	s.NextCursor = val
 }
-
-// DeleteAccountMessageNoContent is response for DeleteAccountMessage operation.
-type DeleteAccountMessageNoContent struct{}
 
 // DeleteMessageNoContent is response for DeleteMessage operation.
 type DeleteMessageNoContent struct{}
@@ -807,97 +545,6 @@ func (s *DeliveryStatus) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
-}
-
-type DownloadAccountAttachmentOK struct {
-	Data io.Reader
-}
-
-// Read reads data from the Data reader.
-//
-// Kept to satisfy the io.Reader interface.
-func (s DownloadAccountAttachmentOK) Read(p []byte) (n int, err error) {
-	if s.Data == nil {
-		return 0, io.EOF
-	}
-	return s.Data.Read(p)
-}
-
-// DownloadAccountAttachmentOKHeaders wraps DownloadAccountAttachmentOK with response headers.
-type DownloadAccountAttachmentOKHeaders struct {
-	ContentDisposition OptString
-	ContentType        string
-	Response           DownloadAccountAttachmentOK
-}
-
-// GetContentDisposition returns the value of ContentDisposition.
-func (s *DownloadAccountAttachmentOKHeaders) GetContentDisposition() OptString {
-	return s.ContentDisposition
-}
-
-// GetContentType returns the value of ContentType.
-func (s *DownloadAccountAttachmentOKHeaders) GetContentType() string {
-	return s.ContentType
-}
-
-// GetResponse returns the value of Response.
-func (s *DownloadAccountAttachmentOKHeaders) GetResponse() DownloadAccountAttachmentOK {
-	return s.Response
-}
-
-// SetContentDisposition sets the value of ContentDisposition.
-func (s *DownloadAccountAttachmentOKHeaders) SetContentDisposition(val OptString) {
-	s.ContentDisposition = val
-}
-
-// SetContentType sets the value of ContentType.
-func (s *DownloadAccountAttachmentOKHeaders) SetContentType(val string) {
-	s.ContentType = val
-}
-
-// SetResponse sets the value of Response.
-func (s *DownloadAccountAttachmentOKHeaders) SetResponse(val DownloadAccountAttachmentOK) {
-	s.Response = val
-}
-
-type DownloadAccountMessageRawOK struct {
-	Data io.Reader
-}
-
-// Read reads data from the Data reader.
-//
-// Kept to satisfy the io.Reader interface.
-func (s DownloadAccountMessageRawOK) Read(p []byte) (n int, err error) {
-	if s.Data == nil {
-		return 0, io.EOF
-	}
-	return s.Data.Read(p)
-}
-
-// DownloadAccountMessageRawOKHeaders wraps DownloadAccountMessageRawOK with response headers.
-type DownloadAccountMessageRawOKHeaders struct {
-	ContentDisposition OptString
-	Response           DownloadAccountMessageRawOK
-}
-
-// GetContentDisposition returns the value of ContentDisposition.
-func (s *DownloadAccountMessageRawOKHeaders) GetContentDisposition() OptString {
-	return s.ContentDisposition
-}
-
-// GetResponse returns the value of Response.
-func (s *DownloadAccountMessageRawOKHeaders) GetResponse() DownloadAccountMessageRawOK {
-	return s.Response
-}
-
-// SetContentDisposition sets the value of ContentDisposition.
-func (s *DownloadAccountMessageRawOKHeaders) SetContentDisposition(val OptString) {
-	s.ContentDisposition = val
-}
-
-// SetResponse sets the value of Response.
-func (s *DownloadAccountMessageRawOKHeaders) SetResponse(val DownloadAccountMessageRawOK) {
-	s.Response = val
 }
 
 type DownloadAttachmentOK struct {
@@ -1021,7 +668,7 @@ func (s *EmailAddress) SetName(val OptString) {
 // Ref: #/components/schemas/EnablementResource
 type EnablementResource struct {
 	// `inactive` has never been enabled or its subscription has ended; `pending` awaits completion of
-	// checkout and acceptance of its order; `active` provisions mailboxes and allows billed outbound
+	// checkout and acceptance of its order; `active` provisions member inboxes and allows outbound
 	// sending; `failed` means enabling failed, as `failure_reason` states.
 	Status EnablementResourceStatus `json:"status"`
 	// True when outbound sending is currently suspended due to billing arrears on the underlying
@@ -1033,9 +680,7 @@ type EnablementResource struct {
 	CheckoutSessionID NilUUID `json:"checkout_session_id"`
 	// The order that enabled the service; null before checkout completes.
 	OrderID NilUUID `json:"order_id"`
-	// The Billing plan the mail service is sold under; null where the service is not sold. Preview pricing
-	// with Billing's `preview-checkout-session` using `recurring` price type, `metered` usage type, and
-	// quantity 1.
+	// The Billing plan the mail service is sold under; null where the service is not sold.
 	PlanID NilUUID `json:"plan_id"`
 	// The Billing subscription under which outbound recipients are billed; null until checkout completes.
 	SubscriptionID NilUUID `json:"subscription_id"`
@@ -1192,7 +837,7 @@ func (s *EnablementResourceFailureReason) UnmarshalText(data []byte) error {
 }
 
 // `inactive` has never been enabled or its subscription has ended; `pending` awaits completion of
-// checkout and acceptance of its order; `active` provisions mailboxes and allows billed outbound
+// checkout and acceptance of its order; `active` provisions member inboxes and allows outbound
 // sending; `failed` means enabling failed, as `failure_reason` states.
 type EnablementResourceStatus string
 
@@ -1443,181 +1088,207 @@ func (s *FieldViolation) SetReason(val OptString) {
 	s.Reason = val
 }
 
-// Ref: #/components/schemas/MailboxListResponseBody
-type MailboxListResponseBody struct {
-	Items      []MailboxResource `json:"items"`
-	Pagination OffsetPagination  `json:"pagination"`
+// Optional inbound forwarding preferences to the owning member's verified IAM email address.
+// Ref: #/components/schemas/InboxForwarding
+type InboxForwarding struct {
+	Enabled bool `json:"enabled"`
+	// True when the owning IAM user has a verified external email eligible for forwarding and
+	// reply-by-email.
+	Verified       bool           `json:"verified"`
+	SpamFilterMode SpamFilterMode `json:"spam_filter_mode"`
+}
+
+// GetEnabled returns the value of Enabled.
+func (s *InboxForwarding) GetEnabled() bool {
+	return s.Enabled
+}
+
+// GetVerified returns the value of Verified.
+func (s *InboxForwarding) GetVerified() bool {
+	return s.Verified
+}
+
+// GetSpamFilterMode returns the value of SpamFilterMode.
+func (s *InboxForwarding) GetSpamFilterMode() SpamFilterMode {
+	return s.SpamFilterMode
+}
+
+// SetEnabled sets the value of Enabled.
+func (s *InboxForwarding) SetEnabled(val bool) {
+	s.Enabled = val
+}
+
+// SetVerified sets the value of Verified.
+func (s *InboxForwarding) SetVerified(val bool) {
+	s.Verified = val
+}
+
+// SetSpamFilterMode sets the value of SpamFilterMode.
+func (s *InboxForwarding) SetSpamFilterMode(val SpamFilterMode) {
+	s.SpamFilterMode = val
+}
+
+// Ref: #/components/schemas/InboxListResponseBody
+type InboxListResponseBody struct {
+	Items      []InboxResource  `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
-func (s *MailboxListResponseBody) GetItems() []MailboxResource {
+func (s *InboxListResponseBody) GetItems() []InboxResource {
 	return s.Items
 }
 
 // GetPagination returns the value of Pagination.
-func (s *MailboxListResponseBody) GetPagination() OffsetPagination {
+func (s *InboxListResponseBody) GetPagination() OffsetPagination {
 	return s.Pagination
 }
 
 // SetItems sets the value of Items.
-func (s *MailboxListResponseBody) SetItems(val []MailboxResource) {
+func (s *InboxListResponseBody) SetItems(val []InboxResource) {
 	s.Items = val
 }
 
 // SetPagination sets the value of Pagination.
-func (s *MailboxListResponseBody) SetPagination(val OffsetPagination) {
+func (s *InboxListResponseBody) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// Ref: #/components/schemas/MailboxResource
-type MailboxResource struct {
+// Ref: #/components/schemas/InboxResource
+type InboxResource struct {
 	ID uuid.UUID `json:"id"`
-	// Service account associated with this mailbox.
-	ServiceAccountID NilUUID `json:"service_account_id"`
-	// Display name used when formatting outbound `From` headers.
-	DisplayName string `json:"display_name"`
-	// Full allocated email address; null while allocation is pending or failed.
-	Address          NilString        `json:"address"`
-	AllocationStatus AllocationStatus `json:"allocation_status"`
-	// Machine-readable reason when `allocation_status` is `failed`; null otherwise.
-	AllocationError NilString `json:"allocation_error"`
-	// Whether inbound mail is currently accepted for this mailbox.
-	InboundEnabled bool           `json:"inbound_enabled"`
-	OutboundStatus OutboundStatus `json:"outbound_status"`
-	PauseReason    NilPauseReason `json:"pause_reason"`
-	PausedAt       NilDateTime    `json:"paused_at"`
-	UnreadCount    int64          `json:"unread_count"`
-	CreatedAt      time.Time      `json:"created_at"`
-	UpdatedAt      time.Time      `json:"updated_at"`
+	// IAM user ID of the project member owning this inbox (human member or service account).
+	UserID string `json:"user_id"`
+	// Allocated primary email address on the platform domain.
+	Address        string          `json:"address"`
+	DisplayName    string          `json:"display_name"`
+	InboundEnabled bool            `json:"inbound_enabled"`
+	OutboundStatus OutboundStatus  `json:"outbound_status"`
+	PauseReason    NilPauseReason  `json:"pause_reason"`
+	PauseDetail    NilString       `json:"pause_detail"`
+	PausedAt       NilDateTime     `json:"paused_at"`
+	Forwarding     InboxForwarding `json:"forwarding"`
+	CreatedAt      time.Time       `json:"created_at"`
+	UpdatedAt      time.Time       `json:"updated_at"`
 }
 
 // GetID returns the value of ID.
-func (s *MailboxResource) GetID() uuid.UUID {
+func (s *InboxResource) GetID() uuid.UUID {
 	return s.ID
 }
 
-// GetServiceAccountID returns the value of ServiceAccountID.
-func (s *MailboxResource) GetServiceAccountID() NilUUID {
-	return s.ServiceAccountID
-}
-
-// GetDisplayName returns the value of DisplayName.
-func (s *MailboxResource) GetDisplayName() string {
-	return s.DisplayName
+// GetUserID returns the value of UserID.
+func (s *InboxResource) GetUserID() string {
+	return s.UserID
 }
 
 // GetAddress returns the value of Address.
-func (s *MailboxResource) GetAddress() NilString {
+func (s *InboxResource) GetAddress() string {
 	return s.Address
 }
 
-// GetAllocationStatus returns the value of AllocationStatus.
-func (s *MailboxResource) GetAllocationStatus() AllocationStatus {
-	return s.AllocationStatus
-}
-
-// GetAllocationError returns the value of AllocationError.
-func (s *MailboxResource) GetAllocationError() NilString {
-	return s.AllocationError
+// GetDisplayName returns the value of DisplayName.
+func (s *InboxResource) GetDisplayName() string {
+	return s.DisplayName
 }
 
 // GetInboundEnabled returns the value of InboundEnabled.
-func (s *MailboxResource) GetInboundEnabled() bool {
+func (s *InboxResource) GetInboundEnabled() bool {
 	return s.InboundEnabled
 }
 
 // GetOutboundStatus returns the value of OutboundStatus.
-func (s *MailboxResource) GetOutboundStatus() OutboundStatus {
+func (s *InboxResource) GetOutboundStatus() OutboundStatus {
 	return s.OutboundStatus
 }
 
 // GetPauseReason returns the value of PauseReason.
-func (s *MailboxResource) GetPauseReason() NilPauseReason {
+func (s *InboxResource) GetPauseReason() NilPauseReason {
 	return s.PauseReason
 }
 
+// GetPauseDetail returns the value of PauseDetail.
+func (s *InboxResource) GetPauseDetail() NilString {
+	return s.PauseDetail
+}
+
 // GetPausedAt returns the value of PausedAt.
-func (s *MailboxResource) GetPausedAt() NilDateTime {
+func (s *InboxResource) GetPausedAt() NilDateTime {
 	return s.PausedAt
 }
 
-// GetUnreadCount returns the value of UnreadCount.
-func (s *MailboxResource) GetUnreadCount() int64 {
-	return s.UnreadCount
+// GetForwarding returns the value of Forwarding.
+func (s *InboxResource) GetForwarding() InboxForwarding {
+	return s.Forwarding
 }
 
 // GetCreatedAt returns the value of CreatedAt.
-func (s *MailboxResource) GetCreatedAt() time.Time {
+func (s *InboxResource) GetCreatedAt() time.Time {
 	return s.CreatedAt
 }
 
 // GetUpdatedAt returns the value of UpdatedAt.
-func (s *MailboxResource) GetUpdatedAt() time.Time {
+func (s *InboxResource) GetUpdatedAt() time.Time {
 	return s.UpdatedAt
 }
 
 // SetID sets the value of ID.
-func (s *MailboxResource) SetID(val uuid.UUID) {
+func (s *InboxResource) SetID(val uuid.UUID) {
 	s.ID = val
 }
 
-// SetServiceAccountID sets the value of ServiceAccountID.
-func (s *MailboxResource) SetServiceAccountID(val NilUUID) {
-	s.ServiceAccountID = val
-}
-
-// SetDisplayName sets the value of DisplayName.
-func (s *MailboxResource) SetDisplayName(val string) {
-	s.DisplayName = val
+// SetUserID sets the value of UserID.
+func (s *InboxResource) SetUserID(val string) {
+	s.UserID = val
 }
 
 // SetAddress sets the value of Address.
-func (s *MailboxResource) SetAddress(val NilString) {
+func (s *InboxResource) SetAddress(val string) {
 	s.Address = val
 }
 
-// SetAllocationStatus sets the value of AllocationStatus.
-func (s *MailboxResource) SetAllocationStatus(val AllocationStatus) {
-	s.AllocationStatus = val
-}
-
-// SetAllocationError sets the value of AllocationError.
-func (s *MailboxResource) SetAllocationError(val NilString) {
-	s.AllocationError = val
+// SetDisplayName sets the value of DisplayName.
+func (s *InboxResource) SetDisplayName(val string) {
+	s.DisplayName = val
 }
 
 // SetInboundEnabled sets the value of InboundEnabled.
-func (s *MailboxResource) SetInboundEnabled(val bool) {
+func (s *InboxResource) SetInboundEnabled(val bool) {
 	s.InboundEnabled = val
 }
 
 // SetOutboundStatus sets the value of OutboundStatus.
-func (s *MailboxResource) SetOutboundStatus(val OutboundStatus) {
+func (s *InboxResource) SetOutboundStatus(val OutboundStatus) {
 	s.OutboundStatus = val
 }
 
 // SetPauseReason sets the value of PauseReason.
-func (s *MailboxResource) SetPauseReason(val NilPauseReason) {
+func (s *InboxResource) SetPauseReason(val NilPauseReason) {
 	s.PauseReason = val
 }
 
+// SetPauseDetail sets the value of PauseDetail.
+func (s *InboxResource) SetPauseDetail(val NilString) {
+	s.PauseDetail = val
+}
+
 // SetPausedAt sets the value of PausedAt.
-func (s *MailboxResource) SetPausedAt(val NilDateTime) {
+func (s *InboxResource) SetPausedAt(val NilDateTime) {
 	s.PausedAt = val
 }
 
-// SetUnreadCount sets the value of UnreadCount.
-func (s *MailboxResource) SetUnreadCount(val int64) {
-	s.UnreadCount = val
+// SetForwarding sets the value of Forwarding.
+func (s *InboxResource) SetForwarding(val InboxForwarding) {
+	s.Forwarding = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
-func (s *MailboxResource) SetCreatedAt(val time.Time) {
+func (s *InboxResource) SetCreatedAt(val time.Time) {
 	s.CreatedAt = val
 }
 
 // SetUpdatedAt sets the value of UpdatedAt.
-func (s *MailboxResource) SetUpdatedAt(val time.Time) {
+func (s *InboxResource) SetUpdatedAt(val time.Time) {
 	s.UpdatedAt = val
 }
 
@@ -1831,7 +1502,7 @@ func (s *MessageHeadersResource) SetHeaders(val []MessageHeader) {
 // Ref: #/components/schemas/MessageResource
 type MessageResource struct {
 	ID           uuid.UUID        `json:"id"`
-	MailboxID    uuid.UUID        `json:"mailbox_id"`
+	InboxID      uuid.UUID        `json:"inbox_id"`
 	ThreadID     uuid.UUID        `json:"thread_id"`
 	Direction    MessageDirection `json:"direction"`
 	Status       MessageStatus    `json:"status"`
@@ -1859,8 +1530,7 @@ type MessageResource struct {
 	Attachments    []AttachmentResource `json:"attachments"`
 	// Per-recipient delivery states for outbound messages; empty array on inbound messages.
 	Deliveries []MessageDelivery `json:"deliveries"`
-	// Number of billable recipients accepted for outbound delivery. Zero for inbound messages and free
-	// personal replies.
+	// Number of billable recipients accepted for outbound delivery. Zero for inbound messages.
 	BilledRecipients int64       `json:"billed_recipients"`
 	ReadAt           NilDateTime `json:"read_at"`
 	Flagged          bool        `json:"flagged"`
@@ -1872,9 +1542,9 @@ func (s *MessageResource) GetID() uuid.UUID {
 	return s.ID
 }
 
-// GetMailboxID returns the value of MailboxID.
-func (s *MessageResource) GetMailboxID() uuid.UUID {
-	return s.MailboxID
+// GetInboxID returns the value of InboxID.
+func (s *MessageResource) GetInboxID() uuid.UUID {
+	return s.InboxID
 }
 
 // GetThreadID returns the value of ThreadID.
@@ -2002,9 +1672,9 @@ func (s *MessageResource) SetID(val uuid.UUID) {
 	s.ID = val
 }
 
-// SetMailboxID sets the value of MailboxID.
-func (s *MessageResource) SetMailboxID(val uuid.UUID) {
-	s.MailboxID = val
+// SetInboxID sets the value of InboxID.
+func (s *MessageResource) SetInboxID(val uuid.UUID) {
+	s.InboxID = val
 }
 
 // SetThreadID sets the value of ThreadID.
@@ -2241,7 +1911,7 @@ func (s *MessageSummaryListResponseBody) SetPagination(val CursorPagination) {
 // Ref: #/components/schemas/MessageSummaryResource
 type MessageSummaryResource struct {
 	ID        uuid.UUID        `json:"id"`
-	MailboxID uuid.UUID        `json:"mailbox_id"`
+	InboxID   uuid.UUID        `json:"inbox_id"`
 	ThreadID  uuid.UUID        `json:"thread_id"`
 	Direction MessageDirection `json:"direction"`
 	Status    MessageStatus    `json:"status"`
@@ -2256,8 +1926,7 @@ type MessageSummaryResource struct {
 	HasAttachments bool `json:"has_attachments"`
 	// Total encoded RFC 5322 message size in bytes.
 	SizeBytes int64 `json:"size_bytes"`
-	// Number of billable recipients accepted for outbound delivery. Zero for inbound messages and free
-	// personal replies.
+	// Number of billable recipients accepted for outbound delivery. Zero for inbound messages.
 	BilledRecipients int64       `json:"billed_recipients"`
 	ReadAt           NilDateTime `json:"read_at"`
 	Flagged          bool        `json:"flagged"`
@@ -2269,9 +1938,9 @@ func (s *MessageSummaryResource) GetID() uuid.UUID {
 	return s.ID
 }
 
-// GetMailboxID returns the value of MailboxID.
-func (s *MessageSummaryResource) GetMailboxID() uuid.UUID {
-	return s.MailboxID
+// GetInboxID returns the value of InboxID.
+func (s *MessageSummaryResource) GetInboxID() uuid.UUID {
+	return s.InboxID
 }
 
 // GetThreadID returns the value of ThreadID.
@@ -2349,9 +2018,9 @@ func (s *MessageSummaryResource) SetID(val uuid.UUID) {
 	s.ID = val
 }
 
-// SetMailboxID sets the value of MailboxID.
-func (s *MessageSummaryResource) SetMailboxID(val uuid.UUID) {
-	s.MailboxID = val
+// SetInboxID sets the value of InboxID.
+func (s *MessageSummaryResource) SetInboxID(val uuid.UUID) {
+	s.InboxID = val
 }
 
 // SetThreadID sets the value of ThreadID.
@@ -3444,41 +3113,33 @@ func (o OptUUID) Or(d uuid.UUID) uuid.UUID {
 	return d
 }
 
-// Current outbound sending state for a mailbox.
+// Current outbound sending state for an inbox.
 // Ref: #/components/schemas/OutboundStatus
 type OutboundStatus string
 
 const (
-	OutboundStatusDisabled            OutboundStatus = "disabled"
-	OutboundStatusActive              OutboundStatus = "active"
-	OutboundStatusPausedByProject     OutboundStatus = "paused_by_project"
-	OutboundStatusPausedForReputation OutboundStatus = "paused_for_reputation"
-	OutboundStatusSuspendedByOperator OutboundStatus = "suspended_by_operator"
+	OutboundStatusActive    OutboundStatus = "active"
+	OutboundStatusPaused    OutboundStatus = "paused"
+	OutboundStatusSuspended OutboundStatus = "suspended"
 )
 
 // AllValues returns all OutboundStatus values.
 func (OutboundStatus) AllValues() []OutboundStatus {
 	return []OutboundStatus{
-		OutboundStatusDisabled,
 		OutboundStatusActive,
-		OutboundStatusPausedByProject,
-		OutboundStatusPausedForReputation,
-		OutboundStatusSuspendedByOperator,
+		OutboundStatusPaused,
+		OutboundStatusSuspended,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
 func (s OutboundStatus) MarshalText() ([]byte, error) {
 	switch s {
-	case OutboundStatusDisabled:
-		return []byte(s), nil
 	case OutboundStatusActive:
 		return []byte(s), nil
-	case OutboundStatusPausedByProject:
+	case OutboundStatusPaused:
 		return []byte(s), nil
-	case OutboundStatusPausedForReputation:
-		return []byte(s), nil
-	case OutboundStatusSuspendedByOperator:
+	case OutboundStatusSuspended:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -3488,20 +3149,14 @@ func (s OutboundStatus) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (s *OutboundStatus) UnmarshalText(data []byte) error {
 	switch OutboundStatus(data) {
-	case OutboundStatusDisabled:
-		*s = OutboundStatusDisabled
-		return nil
 	case OutboundStatusActive:
 		*s = OutboundStatusActive
 		return nil
-	case OutboundStatusPausedByProject:
-		*s = OutboundStatusPausedByProject
+	case OutboundStatusPaused:
+		*s = OutboundStatusPaused
 		return nil
-	case OutboundStatusPausedForReputation:
-		*s = OutboundStatusPausedForReputation
-		return nil
-	case OutboundStatusSuspendedByOperator:
-		*s = OutboundStatusSuspendedByOperator
+	case OutboundStatusSuspended:
+		*s = OutboundStatusSuspended
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -3705,63 +3360,10 @@ func (s *ProjectSuppressionResource) SetExpiresAt(val NilDateTime) {
 	s.ExpiresAt = val
 }
 
-// Ref: #/components/schemas/ReplyAccountThreadRequestBody
-type ReplyAccountThreadRequestBody struct {
-	// Specific inbound message in this thread to reply to; defaults to the latest inbound message.
-	InReplyToMessageID OptUUID `json:"in_reply_to_message_id"`
-	// Plain-text reply body. At least one of `text` or `html` is required.
-	Text OptString `json:"text"`
-	// HTML reply body. At least one of `text` or `html` is required; plain text is auto-derived when
-	// omitted.
-	HTML OptString `json:"html"`
-	// Pre-uploaded attachment IDs from `upload-account-attachment`.
-	AttachmentIds []uuid.UUID `json:"attachment_ids"`
-}
-
-// GetInReplyToMessageID returns the value of InReplyToMessageID.
-func (s *ReplyAccountThreadRequestBody) GetInReplyToMessageID() OptUUID {
-	return s.InReplyToMessageID
-}
-
-// GetText returns the value of Text.
-func (s *ReplyAccountThreadRequestBody) GetText() OptString {
-	return s.Text
-}
-
-// GetHTML returns the value of HTML.
-func (s *ReplyAccountThreadRequestBody) GetHTML() OptString {
-	return s.HTML
-}
-
-// GetAttachmentIds returns the value of AttachmentIds.
-func (s *ReplyAccountThreadRequestBody) GetAttachmentIds() []uuid.UUID {
-	return s.AttachmentIds
-}
-
-// SetInReplyToMessageID sets the value of InReplyToMessageID.
-func (s *ReplyAccountThreadRequestBody) SetInReplyToMessageID(val OptUUID) {
-	s.InReplyToMessageID = val
-}
-
-// SetText sets the value of Text.
-func (s *ReplyAccountThreadRequestBody) SetText(val OptString) {
-	s.Text = val
-}
-
-// SetHTML sets the value of HTML.
-func (s *ReplyAccountThreadRequestBody) SetHTML(val OptString) {
-	s.HTML = val
-}
-
-// SetAttachmentIds sets the value of AttachmentIds.
-func (s *ReplyAccountThreadRequestBody) SetAttachmentIds(val []uuid.UUID) {
-	s.AttachmentIds = val
-}
-
 // Ref: #/components/schemas/ReplyMessageRequestBody
 type ReplyMessageRequestBody struct {
 	// When true, includes original `to` and `cc` addresses in `cc` (deduplicated and excluding the sending
-	// mailbox's own address). Defaults to false.
+	// inbox's own address). Defaults to false.
 	ReplyAll OptBool `json:"reply_all"`
 	// Optional additional CC recipients merged with `reply_all` recipients.
 	Cc  []EmailAddress `json:"cc"`
@@ -3773,7 +3375,7 @@ type ReplyMessageRequestBody struct {
 	// HTML reply body. At least one of `text` or `html` is required; plain text is auto-derived when
 	// omitted.
 	HTML OptString `json:"html"`
-	// Pre-uploaded attachment IDs from `upload-attachment`.
+	// Pre-uploaded attachment IDs from `upload-attachment` on the same inbox.
 	AttachmentIds []uuid.UUID `json:"attachment_ids"`
 	// Optional custom `X-*` headers (combined size at most 16 KiB).
 	Headers OptReplyMessageRequestBodyHeaders `json:"headers"`
@@ -3873,9 +3475,6 @@ func (s *ReplyMessageRequestBodyHeaders) init() ReplyMessageRequestBodyHeaders {
 
 // Ref: #/components/schemas/SendMessageRequestBody
 type SendMessageRequestBody struct {
-	// Sending mailbox ID. Optional when authenticated as a service account (defaults to its own allocated
-	// mailbox and must match it); required when a human member sends on behalf of a mailbox.
-	MailboxID OptUUID `json:"mailbox_id"`
 	// Primary recipients. Combined count across `to`, `cc`, and `bcc` must not exceed 50.
 	To      []EmailAddress  `json:"to"`
 	Cc      []EmailAddress  `json:"cc"`
@@ -3886,20 +3485,15 @@ type SendMessageRequestBody struct {
 	Text OptString `json:"text"`
 	// HTML body. At least one of `text` or `html` is required; plain text is auto-derived when omitted.
 	HTML OptString `json:"html"`
-	// Existing message ID in the same mailbox to reply to; automatically sets threading headers and
-	// attaches to the same thread.
+	// Existing message ID in the same inbox to reply to; automatically sets threading headers and attaches
+	// to the same thread.
 	InReplyToMessageID OptUUID `json:"in_reply_to_message_id"`
-	// Pre-uploaded attachment IDs from `upload-attachment`. Combined assembled message size must not
-	// exceed 25 MiB.
+	// Pre-uploaded attachment IDs from `upload-attachment` on the same inbox. Combined assembled message
+	// size must not exceed 25 MiB.
 	AttachmentIds []uuid.UUID `json:"attachment_ids"`
 	// Optional custom `X-*` headers (combined size at most 16 KiB). Standard envelope and authentication
 	// headers are rejected.
 	Headers OptSendMessageRequestBodyHeaders `json:"headers"`
-}
-
-// GetMailboxID returns the value of MailboxID.
-func (s *SendMessageRequestBody) GetMailboxID() OptUUID {
-	return s.MailboxID
 }
 
 // GetTo returns the value of To.
@@ -3950,11 +3544,6 @@ func (s *SendMessageRequestBody) GetAttachmentIds() []uuid.UUID {
 // GetHeaders returns the value of Headers.
 func (s *SendMessageRequestBody) GetHeaders() OptSendMessageRequestBodyHeaders {
 	return s.Headers
-}
-
-// SetMailboxID sets the value of MailboxID.
-func (s *SendMessageRequestBody) SetMailboxID(val OptUUID) {
-	s.MailboxID = val
 }
 
 // SetTo sets the value of To.
@@ -4020,8 +3609,6 @@ func (s *SendMessageRequestBodyHeaders) init() SendMessageRequestBodyHeaders {
 	return m
 }
 
-// `standard` filters known spoofing and unauthenticated bulk mail before forwarding; `strict` forwards
-// only messages passing strict sender authentication.
 // Ref: #/components/schemas/SpamFilterMode
 type SpamFilterMode string
 
@@ -4093,7 +3680,7 @@ func (s *ThreadListResponseBody) SetPagination(val CursorPagination) {
 // Ref: #/components/schemas/ThreadResource
 type ThreadResource struct {
 	ID           uuid.UUID      `json:"id"`
-	MailboxID    uuid.UUID      `json:"mailbox_id"`
+	InboxID      uuid.UUID      `json:"inbox_id"`
 	Subject      string         `json:"subject"`
 	Snippet      string         `json:"snippet"`
 	Participants []EmailAddress `json:"participants"`
@@ -4103,7 +3690,7 @@ type ThreadResource struct {
 	Flagged bool `json:"flagged"`
 	// True when at least one message in the thread has a non-inline attachment.
 	HasAttachments bool `json:"has_attachments"`
-	// Whether the thread has a verified external counterparty eligible for a reply.
+	// Whether the thread has an external counterparty eligible for a reply.
 	Replyable     bool      `json:"replyable"`
 	LastMessageAt time.Time `json:"last_message_at"`
 	CreatedAt     time.Time `json:"created_at"`
@@ -4114,9 +3701,9 @@ func (s *ThreadResource) GetID() uuid.UUID {
 	return s.ID
 }
 
-// GetMailboxID returns the value of MailboxID.
-func (s *ThreadResource) GetMailboxID() uuid.UUID {
-	return s.MailboxID
+// GetInboxID returns the value of InboxID.
+func (s *ThreadResource) GetInboxID() uuid.UUID {
+	return s.InboxID
 }
 
 // GetSubject returns the value of Subject.
@@ -4174,9 +3761,9 @@ func (s *ThreadResource) SetID(val uuid.UUID) {
 	s.ID = val
 }
 
-// SetMailboxID sets the value of MailboxID.
-func (s *ThreadResource) SetMailboxID(val uuid.UUID) {
-	s.MailboxID = val
+// SetInboxID sets the value of InboxID.
+func (s *ThreadResource) SetInboxID(val uuid.UUID) {
+	s.InboxID = val
 }
 
 // SetSubject sets the value of Subject.
@@ -4229,29 +3816,51 @@ func (s *ThreadResource) SetCreatedAt(val time.Time) {
 	s.CreatedAt = val
 }
 
-// Ref: #/components/schemas/UpdateAccountMailboxRequestBody
-type UpdateAccountMailboxRequestBody struct {
+// Ref: #/components/schemas/UpdateInboxRequestBody
+type UpdateInboxRequestBody struct {
+	DisplayName       OptString         `json:"display_name"`
+	InboundEnabled    OptBool           `json:"inbound_enabled"`
 	ForwardingEnabled OptBool           `json:"forwarding_enabled"`
 	SpamFilterMode    OptSpamFilterMode `json:"spam_filter_mode"`
 }
 
+// GetDisplayName returns the value of DisplayName.
+func (s *UpdateInboxRequestBody) GetDisplayName() OptString {
+	return s.DisplayName
+}
+
+// GetInboundEnabled returns the value of InboundEnabled.
+func (s *UpdateInboxRequestBody) GetInboundEnabled() OptBool {
+	return s.InboundEnabled
+}
+
 // GetForwardingEnabled returns the value of ForwardingEnabled.
-func (s *UpdateAccountMailboxRequestBody) GetForwardingEnabled() OptBool {
+func (s *UpdateInboxRequestBody) GetForwardingEnabled() OptBool {
 	return s.ForwardingEnabled
 }
 
 // GetSpamFilterMode returns the value of SpamFilterMode.
-func (s *UpdateAccountMailboxRequestBody) GetSpamFilterMode() OptSpamFilterMode {
+func (s *UpdateInboxRequestBody) GetSpamFilterMode() OptSpamFilterMode {
 	return s.SpamFilterMode
 }
 
+// SetDisplayName sets the value of DisplayName.
+func (s *UpdateInboxRequestBody) SetDisplayName(val OptString) {
+	s.DisplayName = val
+}
+
+// SetInboundEnabled sets the value of InboundEnabled.
+func (s *UpdateInboxRequestBody) SetInboundEnabled(val OptBool) {
+	s.InboundEnabled = val
+}
+
 // SetForwardingEnabled sets the value of ForwardingEnabled.
-func (s *UpdateAccountMailboxRequestBody) SetForwardingEnabled(val OptBool) {
+func (s *UpdateInboxRequestBody) SetForwardingEnabled(val OptBool) {
 	s.ForwardingEnabled = val
 }
 
 // SetSpamFilterMode sets the value of SpamFilterMode.
-func (s *UpdateAccountMailboxRequestBody) SetSpamFilterMode(val OptSpamFilterMode) {
+func (s *UpdateInboxRequestBody) SetSpamFilterMode(val OptSpamFilterMode) {
 	s.SpamFilterMode = val
 }
 
@@ -4281,20 +3890,6 @@ func (s *UpdateMessageRequestBody) SetRead(val OptBool) {
 // SetFlagged sets the value of Flagged.
 func (s *UpdateMessageRequestBody) SetFlagged(val OptBool) {
 	s.Flagged = val
-}
-
-type UploadAccountAttachmentReq struct {
-	Data io.Reader
-}
-
-// Read reads data from the Data reader.
-//
-// Kept to satisfy the io.Reader interface.
-func (s UploadAccountAttachmentReq) Read(p []byte) (n int, err error) {
-	if s.Data == nil {
-		return 0, io.EOF
-	}
-	return s.Data.Read(p)
 }
 
 type UploadAttachmentReq struct {

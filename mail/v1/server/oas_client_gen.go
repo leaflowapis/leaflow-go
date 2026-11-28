@@ -29,147 +29,85 @@ func trimTrailingSlashes(u *url.URL) {
 
 // Invoker invokes operations described by OpenAPI v3 specification.
 type Invoker interface {
-	// ActivateAccountMailbox invokes activate-account-mailbox operation.
-	//
-	// Idempotently allocates the caller's default personal mailbox address if it has not yet been
-	// provisioned. Free of charge and requires no billing account.
-	//
-	// POST /api/v1/account/mailbox:activate
-	ActivateAccountMailbox(ctx context.Context) (*AccountMailboxResource, error)
-	// AllocateMailbox invokes allocate-mailbox operation.
-	//
-	// Idempotently allocates a default mailbox address for an active service account in the project, or
-	// retries a previously failed allocation. Requires the project mail service to be enabled (412
-	// `MAIL_SERVICE_NOT_ENABLED` otherwise). If the service account already holds an allocated mailbox,
-	// returns it with 200.
-	//
-	// POST /api/v1/mailboxes
-	AllocateMailbox(ctx context.Context, request *AllocateMailboxRequestBody) (AllocateMailboxRes, error)
-	// BatchUpdateAccountMessages invokes batch-update-account-messages operation.
-	//
-	// Batch update read or flagged state on personal account messages.
-	//
-	// POST /api/v1/account/messages:batchUpdate
-	BatchUpdateAccountMessages(ctx context.Context, request *BatchUpdateMessagesRequestBody) (*BatchUpdateMessagesResponseBody, error)
 	// BatchUpdateMessages invokes batch-update-messages operation.
 	//
-	// Updates `read` and/or `flagged` on up to 200 messages belonging to the authenticated project in a
-	// single call. Service account tokens may only update messages in their own mailbox.
+	// Updates `read` and/or `flagged` on up to 200 messages belonging to the specified inbox in a single
+	// call.
 	//
-	// POST /api/v1/messages:batchUpdate
-	BatchUpdateMessages(ctx context.Context, request *BatchUpdateMessagesRequestBody) (*BatchUpdateMessagesResponseBody, error)
+	// POST /api/v1/inboxes/{inboxId}/messages:batchUpdate
+	BatchUpdateMessages(ctx context.Context, request *BatchUpdateMessagesRequestBody, params BatchUpdateMessagesParams) (*BatchUpdateMessagesResponseBody, error)
 	// CreateEnablement invokes create-enablement operation.
 	//
-	// Enables the mail service for the authenticated project. Enabling carries no upfront fee; inbound
-	// mail is free and outbound mail is billed per accepted recipient with no free outbound allowance.
-	// Returns the enablement as `pending` together with its Billing Checkout Session; once the order is
-	// accepted, `status` transitions to `active` and default email addresses are allocated for project
-	// service accounts.
+	// Enables the mail service for the authenticated project and provisions inboxes for active project
+	// members. Enabling carries no upfront fee; inbound mail is free and outbound mail is billed per
+	// accepted recipient.
 	//
 	// Refused with 409 `MAIL_SERVICE_ALREADY_ENABLED` while an enablement is `pending` or `active`.
-	// Billing refusals are returned with Billing's error code, such as `BILLING_PRICE_UNAVAILABLE` when
-	// the service has no price in the project billing account's currency.
 	//
 	// POST /api/v1/enablement
 	CreateEnablement(ctx context.Context, request *CreateEnablementRequestBody) (CreateEnablementRes, error)
-	// DeleteAccountMessage invokes delete-account-message operation.
+	// CreateInbox invokes create-inbox operation.
 	//
-	// Delete a personal account message.
+	// Idempotently provisions an active `@onleaflow.cloud` inbox for an active member of the authenticated
+	// project (human user or service account). When `user_id` is omitted, provisions an inbox for the
+	// caller. Returns immediately with the allocated address.
 	//
-	// DELETE /api/v1/account/messages/{messageId}
-	DeleteAccountMessage(ctx context.Context, params DeleteAccountMessageParams) error
+	// POST /api/v1/inboxes
+	CreateInbox(ctx context.Context, request *CreateInboxRequestBody) (*InboxResource, error)
 	// DeleteMessage invokes delete-message operation.
 	//
-	// Removes the message body, raw archive, and attachments from the tenant mailbox view. Outbound
-	// delivery and billing metadata are retained for auditing.
+	// Removes the message body, raw archive, and attachments from the tenant inbox view. Outbound delivery
+	// and billing metadata are retained for auditing.
 	//
-	// DELETE /api/v1/messages/{messageId}
+	// DELETE /api/v1/inboxes/{inboxId}/messages/{messageId}
 	DeleteMessage(ctx context.Context, params DeleteMessageParams) error
-	// DownloadAccountAttachment invokes download-account-attachment operation.
-	//
-	// Download a personal account attachment.
-	//
-	// GET /api/v1/account/attachments/{attachmentId}/content
-	DownloadAccountAttachment(ctx context.Context, params DownloadAccountAttachmentParams) (*DownloadAccountAttachmentOKHeaders, error)
-	// DownloadAccountMessageRaw invokes download-account-message-raw operation.
-	//
-	// Download raw RFC 5322 `.eml` source of a personal account message.
-	//
-	// GET /api/v1/account/messages/{messageId}/raw
-	DownloadAccountMessageRaw(ctx context.Context, params DownloadAccountMessageRawParams) (*DownloadAccountMessageRawOKHeaders, error)
 	// DownloadAttachment invokes download-attachment operation.
 	//
-	// Streams the attachment bytes for an inbound or outbound message in the authenticated project.
+	// Streams the attachment bytes for an inbound or outbound message in the specified inbox.
 	// `Content-Disposition` is `attachment` unless `inline=true` is requested and the detected content
 	// type can be rendered safely.
 	//
-	// GET /api/v1/attachments/{attachmentId}/content
+	// GET /api/v1/inboxes/{inboxId}/attachments/{attachmentId}/content
 	DownloadAttachment(ctx context.Context, params DownloadAttachmentParams) (*DownloadAttachmentOKHeaders, error)
 	// DownloadMessageRaw invokes download-message-raw operation.
 	//
-	// Download raw RFC 5322 `.eml` source of a project message.
+	// Download raw RFC 5322 `.eml` source of a message.
 	//
-	// GET /api/v1/messages/{messageId}/raw
+	// GET /api/v1/inboxes/{inboxId}/messages/{messageId}/raw
 	DownloadMessageRaw(ctx context.Context, params DownloadMessageRawParams) (*DownloadMessageRawOKHeaders, error)
-	// GetAccountMailbox invokes get-account-mailbox operation.
-	//
-	// Returns the caller's personal mailbox allocation status, default email address, forwarding
-	// preferences, daily reply quota usage, and outbound state. Inbound mail, forwarding to the account's
-	// verified email address, and replies to existing inbound threads are free.
-	//
-	// GET /api/v1/account/mailbox
-	GetAccountMailbox(ctx context.Context) (*AccountMailboxResource, error)
-	// GetAccountMessage invokes get-account-message operation.
-	//
-	// Get a personal account message.
-	//
-	// GET /api/v1/account/messages/{messageId}
-	GetAccountMessage(ctx context.Context, params GetAccountMessageParams) (*MessageResource, error)
-	// GetAccountMessageHeaders invokes get-account-message-headers operation.
-	//
-	// Get raw RFC 5322 headers of a personal account message.
-	//
-	// GET /api/v1/account/messages/{messageId}/headers
-	GetAccountMessageHeaders(ctx context.Context, params GetAccountMessageHeadersParams) (*MessageHeadersResource, error)
-	// GetAccountThread invokes get-account-thread operation.
-	//
-	// Get a personal account email thread.
-	//
-	// GET /api/v1/account/threads/{threadId}
-	GetAccountThread(ctx context.Context, params GetAccountThreadParams) (*ThreadResource, error)
 	// GetEnablement invokes get-enablement operation.
 	//
-	// Returns the mail service enablement of the authenticated project. Once `status` is `active`, default
-	// email addresses are provisioned for active service accounts in the project, inbound delivery is
-	// accepted at no charge, and outbound sends are billed per accepted recipient under `subscription_id`
-	// (unless `billing_suspended` is true).
+	// Returns the mail service enablement of the authenticated project. Once `status` is `active`, inboxes
+	// are provisioned for active project members (human members and service accounts alike), inbound
+	// delivery is accepted at no charge, and outbound sends are billed per accepted recipient under
+	// `subscription_id` (unless `billing_suspended` is true).
 	//
 	// GET /api/v1/enablement
 	GetEnablement(ctx context.Context) (*EnablementResource, error)
-	// GetMailbox invokes get-mailbox operation.
+	// GetInbox invokes get-inbox operation.
 	//
-	// Returns a single mailbox's address allocation status, outbound state, and unread count.
+	// Get an inbox.
 	//
-	// GET /api/v1/mailboxes/{mailboxId}
-	GetMailbox(ctx context.Context, params GetMailboxParams) (*MailboxResource, error)
+	// GET /api/v1/inboxes/{inboxId}
+	GetInbox(ctx context.Context, params GetInboxParams) (*InboxResource, error)
 	// GetMessage invokes get-message operation.
 	//
 	// Returns full message details including plain-text body, server-sanitized HTML body (unless
 	// `include_html=false`), attachments, and per-recipient delivery statuses.
 	//
-	// GET /api/v1/messages/{messageId}
+	// GET /api/v1/inboxes/{inboxId}/messages/{messageId}
 	GetMessage(ctx context.Context, params GetMessageParams) (*MessageResource, error)
 	// GetMessageHeaders invokes get-message-headers operation.
 	//
-	// Get raw RFC 5322 headers of a project message.
+	// Get raw RFC 5322 headers of a message.
 	//
-	// GET /api/v1/messages/{messageId}/headers
+	// GET /api/v1/inboxes/{inboxId}/messages/{messageId}/headers
 	GetMessageHeaders(ctx context.Context, params GetMessageHeadersParams) (*MessageHeadersResource, error)
 	// GetThread invokes get-thread operation.
 	//
-	// Get a project email thread.
+	// Get a thread in an inbox.
 	//
-	// GET /api/v1/threads/{threadId}
+	// GET /api/v1/inboxes/{inboxId}/threads/{threadId}
 	GetThread(ctx context.Context, params GetThreadParams) (*ThreadResource, error)
 	// GetUsage invokes get-usage operation.
 	//
@@ -179,39 +117,26 @@ type Invoker interface {
 	//
 	// GET /api/v1/usage
 	GetUsage(ctx context.Context, params GetUsageParams) (*UsageResource, error)
-	// ListAccountMessages invokes list-account-messages operation.
+	// ListInboxThreads invokes list-inbox-threads operation.
 	//
-	// Cursor-paged lightweight message summaries in the caller's personal mailbox, newest first.
+	// Cursor-paged conversation threads belonging to the specified inbox, ordered by most recent message
+	// first.
 	//
-	// GET /api/v1/account/messages
-	ListAccountMessages(ctx context.Context, params ListAccountMessagesParams) (*MessageSummaryListResponseBody, error)
-	// ListAccountThreadMessages invokes list-account-thread-messages operation.
+	// GET /api/v1/inboxes/{inboxId}/threads
+	ListInboxThreads(ctx context.Context, params ListInboxThreadsParams) (*ThreadListResponseBody, error)
+	// ListInboxes invokes list-inboxes operation.
 	//
-	// Cursor-paged lightweight message summaries belonging to the personal thread, oldest first.
+	// Lists inboxes provisioned for members of the authenticated project (both human members and service
+	// accounts). Service account tokens only receive their own inbox.
 	//
-	// GET /api/v1/account/threads/{threadId}/messages
-	ListAccountThreadMessages(ctx context.Context, params ListAccountThreadMessagesParams) (*MessageSummaryListResponseBody, error)
-	// ListAccountThreads invokes list-account-threads operation.
-	//
-	// Cursor-paged threads in the caller's personal mailbox, most recent first.
-	//
-	// GET /api/v1/account/threads
-	ListAccountThreads(ctx context.Context, params ListAccountThreadsParams) (*ThreadListResponseBody, error)
-	// ListMailboxes invokes list-mailboxes operation.
-	//
-	// Lists mailboxes in the authenticated project together with each mailbox's email address allocation
-	// status and outbound state. Returns an empty list before the project enables the mail service. When
-	// called with a service account token, only that service account's own mailbox is returned.
-	//
-	// GET /api/v1/mailboxes
-	ListMailboxes(ctx context.Context, params ListMailboxesParams) (*MailboxListResponseBody, error)
+	// GET /api/v1/inboxes
+	ListInboxes(ctx context.Context, params ListInboxesParams) (*InboxListResponseBody, error)
 	// ListMessages invokes list-messages operation.
 	//
-	// Cursor-paged lightweight message summaries, newest first, without full body payloads. Service
-	// account tokens are automatically restricted to their own mailbox. Call `get-message` to read full
-	// plain-text or sanitized HTML bodies and attachments.
+	// Cursor-paged lightweight message summaries, newest first, without full body payloads. Call
+	// `get-message` to read full plain-text or sanitized HTML bodies and attachments.
 	//
-	// GET /api/v1/messages
+	// GET /api/v1/inboxes/{inboxId}/messages
 	ListMessages(ctx context.Context, params ListMessagesParams) (*MessageSummaryListResponseBody, error)
 	// ListSuppressions invokes list-suppressions operation.
 	//
@@ -222,105 +147,76 @@ type Invoker interface {
 	ListSuppressions(ctx context.Context, params ListSuppressionsParams) (*ProjectSuppressionListResponseBody, error)
 	// ListThreadMessages invokes list-thread-messages operation.
 	//
-	// Cursor-paged lightweight message summaries belonging to the thread, oldest first. Fetch full body
-	// content via `get-message`.
+	// Returns lightweight message summaries in chronological order (oldest first) for thread rendering.
+	// Call `get-message` for full bodies and attachments.
 	//
-	// GET /api/v1/threads/{threadId}/messages
+	// GET /api/v1/inboxes/{inboxId}/threads/{threadId}/messages
 	ListThreadMessages(ctx context.Context, params ListThreadMessagesParams) (*MessageSummaryListResponseBody, error)
 	// ListThreads invokes list-threads operation.
 	//
-	// Cursor-paged conversation threads ordered by most recent message first. Service account tokens are
-	// automatically restricted to their own mailbox.
+	// Cursor-paged conversation threads across the authenticated project, ordered by most recent message
+	// first. Service account tokens are automatically restricted to their own inbox.
 	//
 	// GET /api/v1/threads
 	ListThreads(ctx context.Context, params ListThreadsParams) (*ThreadListResponseBody, error)
-	// PauseMailboxOutbound invokes pause-mailbox-outbound operation.
+	// PauseInboxOutbound invokes pause-inbox-outbound operation.
 	//
-	// Immediately prevents outbound sending from this mailbox while keeping inbound delivery active.
-	// Useful for stopping a runaway automated sender.
+	// Stops outbound sending from the inbox while keeping inbound mail delivery active.
 	//
-	// POST /api/v1/mailboxes/{mailboxId}:pauseOutbound
-	PauseMailboxOutbound(ctx context.Context, params PauseMailboxOutboundParams) (*MailboxResource, error)
-	// ReplyAccountThread invokes reply-account-thread operation.
-	//
-	// Sends a free single-recipient reply from the caller's personal mailbox to the verified external
-	// sender of an existing inbound thread. The recipient is fixed by the thread and cannot be overridden;
-	// subject to hourly and daily anti-abuse limits.
-	//
-	// POST /api/v1/account/threads/{threadId}:reply
-	ReplyAccountThread(ctx context.Context, request *ReplyAccountThreadRequestBody, params ReplyAccountThreadParams) (*MessageResource, error)
+	// POST /api/v1/inboxes/{inboxId}:pauseOutbound
+	PauseInboxOutbound(ctx context.Context, params PauseInboxOutboundParams) (*InboxResource, error)
 	// ReplyMessage invokes reply-message operation.
 	//
-	// Sends a billed outbound reply from the original message's mailbox while automatically preserving
-	// `In-Reply-To`, `References`, and `Re:` subject folding.
+	// Sends an outbound reply from the inbox while preserving `In-Reply-To`, `References`, and `Re:`
+	// subject folding. Defaults to replying to the original message's `reply_to` (or `from` if absent);
+	// pass `reply_all=true` to include original `to` and `cc` recipients.
 	//
-	// Defaults to replying to the original message's `reply_to` (or `from` if absent). When `reply_all` is
-	// true, deduplicated recipients from the original `to` and `cc` (excluding the sending mailbox's own
-	// address) are added to `cc`. Additional `cc` and `bcc` recipients may also be specified; total
-	// recipients must not exceed 50.
-	//
-	// POST /api/v1/messages/{messageId}:reply
+	// POST /api/v1/inboxes/{inboxId}/messages/{messageId}:reply
 	ReplyMessage(ctx context.Context, request *ReplyMessageRequestBody, params ReplyMessageParams) (*MessageResource, error)
-	// ResumeMailboxOutbound invokes resume-mailbox-outbound operation.
+	// ResumeInboxOutbound invokes resume-inbox-outbound operation.
 	//
-	// Resumes outbound sending on a mailbox paused by the project or paused automatically for reputation
-	// protection. Operator suspensions cannot be cleared here and return 412 `MAIL_MAILBOX_PAUSED`.
+	// Resumes outbound sending for a project-paused or reputation-paused inbox. Operator suspensions
+	// (`suspended`) cannot be lifted by project users and return 403
+	// `MAIL_OUTBOUND_SUSPENDED_BY_OPERATOR`.
 	//
-	// POST /api/v1/mailboxes/{mailboxId}:resumeOutbound
-	ResumeMailboxOutbound(ctx context.Context, params ResumeMailboxOutboundParams) (*MailboxResource, error)
+	// POST /api/v1/inboxes/{inboxId}:resumeOutbound
+	ResumeInboxOutbound(ctx context.Context, params ResumeInboxOutboundParams) (*InboxResource, error)
 	// SendMessage invokes send-message operation.
 	//
-	// Submits an outbound email from a project mailbox and bills the project's active mail subscription by
-	// the number of accepted recipients (`to` + `cc` + `bcc`, at most 50).
+	// Submits an outbound email from the specified inbox and bills the project's active mail subscription
+	// by the number of accepted recipients (`to` + `cc` + `bcc`, at most 50).
 	//
 	//  - Validation, suppression, and rate limits: Messages rejected for invalid arguments (400),
 	//    suppressed recipients (422 `MAIL_RECIPIENT_SUPPRESSED`, non-retryable), or rate / daily-quota
 	//    limits (429 `MAIL_RATE_LIMITED` with `retry_delay`, retryable) are not billed.
-	//  - Accepted sends and bounces: Once accepted (201 with `status: accepted`), delivery proceeds
-	//    asynchronously and per-recipient outcomes appear in `deliveries`; subsequent hard bounces remain
-	//    billed.
-	//  - Sender derivation: `From` is derived strictly from the sending mailbox's allocated address. A
-	//    service account token may omit `mailbox_id` to send from its own mailbox.
+	//  - Sender derivation: `From` is derived strictly from the inbox's allocated address.
 	//  - Plain-text derivation: If only `html` is provided, a plain-text alternative is automatically
 	//    derived for multipart delivery.
 	//
-	// POST /api/v1/messages
+	// POST /api/v1/inboxes/{inboxId}/messages
 	SendMessage(ctx context.Context, request *SendMessageRequestBody, params SendMessageParams) (*MessageResource, error)
-	// UpdateAccountMailbox invokes update-account-mailbox operation.
+	// UpdateInbox invokes update-inbox operation.
 	//
-	// Updates forwarding and inbound spam filtering preferences for the caller's personal mailbox.
-	// Unsupplied fields are left unchanged.
+	// Updates display name, inbound delivery toggle, or optional email forwarding preferences for the
+	// inbox. Unsupplied fields are left unchanged.
 	//
-	// PATCH /api/v1/account/mailbox
-	UpdateAccountMailbox(ctx context.Context, request *UpdateAccountMailboxRequestBody) (*AccountMailboxResource, error)
-	// UpdateAccountMessage invokes update-account-message operation.
-	//
-	// Update read or flagged state of a personal account message.
-	//
-	// PATCH /api/v1/account/messages/{messageId}
-	UpdateAccountMessage(ctx context.Context, request *UpdateMessageRequestBody, params UpdateAccountMessageParams) (*MessageResource, error)
+	// PATCH /api/v1/inboxes/{inboxId}
+	UpdateInbox(ctx context.Context, request *UpdateInboxRequestBody, params UpdateInboxParams) (*InboxResource, error)
 	// UpdateMessage invokes update-message operation.
 	//
-	// Update read or flagged state of a project message.
+	// Update read or flagged state of a message.
 	//
-	// PATCH /api/v1/messages/{messageId}
+	// PATCH /api/v1/inboxes/{inboxId}/messages/{messageId}
 	UpdateMessage(ctx context.Context, request *UpdateMessageRequestBody, params UpdateMessageParams) (*MessageResource, error)
-	// UploadAccountAttachment invokes upload-account-attachment operation.
-	//
-	// Uploads raw file bytes (`application/octet-stream`) for use in `reply-account-thread`. Unreferenced
-	// attachments are removed automatically after 24 hours.
-	//
-	// POST /api/v1/account/attachments
-	UploadAccountAttachment(ctx context.Context, request UploadAccountAttachmentReq, params UploadAccountAttachmentParams) (*AttachmentResource, error)
 	// UploadAttachment invokes upload-attachment operation.
 	//
 	// The body is the raw file bytes (`application/octet-stream`), one file per request. The content type
 	// is determined by inspecting the bytes, not from request headers.
 	//
-	// Pass the returned `id` in `attachment_ids` when calling `send-message`. An unreferenced attachment
-	// is removed automatically after 24 hours.
+	// Pass the returned `id` in `attachment_ids` when calling `send-message` or `reply-message` on the
+	// same inbox. An unreferenced attachment is removed automatically after 24 hours.
 	//
-	// POST /api/v1/attachments
+	// POST /api/v1/inboxes/{inboxId}/attachments
 	UploadAttachment(ctx context.Context, request UploadAttachmentReq, params UploadAttachmentParams) (*AttachmentResource, error)
 }
 
@@ -365,376 +261,18 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 	return u
 }
 
-// ActivateAccountMailbox invokes activate-account-mailbox operation.
-//
-// Idempotently allocates the caller's default personal mailbox address if it has not yet been
-// provisioned. Free of charge and requires no billing account.
-//
-// POST /api/v1/account/mailbox:activate
-func (c *Client) ActivateAccountMailbox(ctx context.Context) (*AccountMailboxResource, error) {
-	res, err := c.sendActivateAccountMailbox(ctx)
-	return res, err
-}
-
-func (c *Client) sendActivateAccountMailbox(ctx context.Context) (res *AccountMailboxResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("activate-account-mailbox"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/account/mailbox:activate"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ActivateAccountMailboxOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/account/mailbox:activate"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:AccessTokenAuth"
-			switch err := c.securityAccessTokenAuth(ctx, ActivateAccountMailboxOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeActivateAccountMailboxResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// AllocateMailbox invokes allocate-mailbox operation.
-//
-// Idempotently allocates a default mailbox address for an active service account in the project, or
-// retries a previously failed allocation. Requires the project mail service to be enabled (412
-// `MAIL_SERVICE_NOT_ENABLED` otherwise). If the service account already holds an allocated mailbox,
-// returns it with 200.
-//
-// POST /api/v1/mailboxes
-func (c *Client) AllocateMailbox(ctx context.Context, request *AllocateMailboxRequestBody) (AllocateMailboxRes, error) {
-	res, err := c.sendAllocateMailbox(ctx, request)
-	return res, err
-}
-
-func (c *Client) sendAllocateMailbox(ctx context.Context, request *AllocateMailboxRequestBody) (res AllocateMailboxRes, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("allocate-mailbox"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/mailboxes"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, AllocateMailboxOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/mailboxes"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeAllocateMailboxRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, AllocateMailboxOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeAllocateMailboxResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// BatchUpdateAccountMessages invokes batch-update-account-messages operation.
-//
-// Batch update read or flagged state on personal account messages.
-//
-// POST /api/v1/account/messages:batchUpdate
-func (c *Client) BatchUpdateAccountMessages(ctx context.Context, request *BatchUpdateMessagesRequestBody) (*BatchUpdateMessagesResponseBody, error) {
-	res, err := c.sendBatchUpdateAccountMessages(ctx, request)
-	return res, err
-}
-
-func (c *Client) sendBatchUpdateAccountMessages(ctx context.Context, request *BatchUpdateMessagesRequestBody) (res *BatchUpdateMessagesResponseBody, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("batch-update-account-messages"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/account/messages:batchUpdate"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, BatchUpdateAccountMessagesOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/account/messages:batchUpdate"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeBatchUpdateAccountMessagesRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:AccessTokenAuth"
-			switch err := c.securityAccessTokenAuth(ctx, BatchUpdateAccountMessagesOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeBatchUpdateAccountMessagesResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // BatchUpdateMessages invokes batch-update-messages operation.
 //
-// Updates `read` and/or `flagged` on up to 200 messages belonging to the authenticated project in a
-// single call. Service account tokens may only update messages in their own mailbox.
+// Updates `read` and/or `flagged` on up to 200 messages belonging to the specified inbox in a single
+// call.
 //
-// POST /api/v1/messages:batchUpdate
-func (c *Client) BatchUpdateMessages(ctx context.Context, request *BatchUpdateMessagesRequestBody) (*BatchUpdateMessagesResponseBody, error) {
-	res, err := c.sendBatchUpdateMessages(ctx, request)
+// POST /api/v1/inboxes/{inboxId}/messages:batchUpdate
+func (c *Client) BatchUpdateMessages(ctx context.Context, request *BatchUpdateMessagesRequestBody, params BatchUpdateMessagesParams) (*BatchUpdateMessagesResponseBody, error) {
+	res, err := c.sendBatchUpdateMessages(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendBatchUpdateMessages(ctx context.Context, request *BatchUpdateMessagesRequestBody) (res *BatchUpdateMessagesResponseBody, err error) {
+func (c *Client) sendBatchUpdateMessages(ctx context.Context, request *BatchUpdateMessagesRequestBody, params BatchUpdateMessagesParams) (res *BatchUpdateMessagesResponseBody, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {
@@ -747,7 +285,7 @@ func (c *Client) sendBatchUpdateMessages(ctx context.Context, request *BatchUpda
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("batch-update-messages"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/messages:batchUpdate"),
+		semconv.URLTemplateKey.String("/api/v1/inboxes/{inboxId}/messages:batchUpdate"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -780,8 +318,27 @@ func (c *Client) sendBatchUpdateMessages(ctx context.Context, request *BatchUpda
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/messages:batchUpdate"
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/inboxes/"
+	{
+		// Encode "inboxId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "inboxId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.InboxId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/messages:batchUpdate"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -851,15 +408,11 @@ func (c *Client) sendBatchUpdateMessages(ctx context.Context, request *BatchUpda
 
 // CreateEnablement invokes create-enablement operation.
 //
-// Enables the mail service for the authenticated project. Enabling carries no upfront fee; inbound
-// mail is free and outbound mail is billed per accepted recipient with no free outbound allowance.
-// Returns the enablement as `pending` together with its Billing Checkout Session; once the order is
-// accepted, `status` transitions to `active` and default email addresses are allocated for project
-// service accounts.
+// Enables the mail service for the authenticated project and provisions inboxes for active project
+// members. Enabling carries no upfront fee; inbound mail is free and outbound mail is billed per
+// accepted recipient.
 //
 // Refused with 409 `MAIL_SERVICE_ALREADY_ENABLED` while an enablement is `pending` or `active`.
-// Billing refusals are returned with Billing's error code, such as `BILLING_PRICE_UNAVAILABLE` when
-// the service has no price in the project billing account's currency.
 //
 // POST /api/v1/enablement
 func (c *Client) CreateEnablement(ctx context.Context, request *CreateEnablementRequestBody) (CreateEnablementRes, error) {
@@ -982,21 +535,32 @@ func (c *Client) sendCreateEnablement(ctx context.Context, request *CreateEnable
 	return result, nil
 }
 
-// DeleteAccountMessage invokes delete-account-message operation.
+// CreateInbox invokes create-inbox operation.
 //
-// Delete a personal account message.
+// Idempotently provisions an active `@onleaflow.cloud` inbox for an active member of the authenticated
+// project (human user or service account). When `user_id` is omitted, provisions an inbox for the
+// caller. Returns immediately with the allocated address.
 //
-// DELETE /api/v1/account/messages/{messageId}
-func (c *Client) DeleteAccountMessage(ctx context.Context, params DeleteAccountMessageParams) error {
-	_, err := c.sendDeleteAccountMessage(ctx, params)
-	return err
+// POST /api/v1/inboxes
+func (c *Client) CreateInbox(ctx context.Context, request *CreateInboxRequestBody) (*InboxResource, error) {
+	res, err := c.sendCreateInbox(ctx, request)
+	return res, err
 }
 
-func (c *Client) sendDeleteAccountMessage(ctx context.Context, params DeleteAccountMessageParams) (res *DeleteAccountMessageNoContent, err error) {
+func (c *Client) sendCreateInbox(ctx context.Context, request *CreateInboxRequestBody) (res *InboxResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("delete-account-message"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/v1/account/messages/{messageId}"),
+		otelogen.OperationID("create-inbox"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/inboxes"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -1012,7 +576,7 @@ func (c *Client) sendDeleteAccountMessage(ctx context.Context, params DeleteAcco
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, DeleteAccountMessageOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateInboxOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -1029,46 +593,31 @@ func (c *Client) sendDeleteAccountMessage(ctx context.Context, params DeleteAcco
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/account/messages/"
-	{
-		// Encode "messageId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "messageId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.MessageId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/inboxes"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "DELETE", u)
+	r, err := ht.NewRequest(ctx, "POST", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateInboxRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
 	}
 
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:AccessTokenAuth"
-			switch err := c.securityAccessTokenAuth(ctx, DeleteAccountMessageOperation, r); {
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, CreateInboxOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
 			}
 		}
 
@@ -1105,7 +654,7 @@ func (c *Client) sendDeleteAccountMessage(ctx context.Context, params DeleteAcco
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeDeleteAccountMessageResponse(resp)
+	result, err := decodeCreateInboxResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -1115,10 +664,10 @@ func (c *Client) sendDeleteAccountMessage(ctx context.Context, params DeleteAcco
 
 // DeleteMessage invokes delete-message operation.
 //
-// Removes the message body, raw archive, and attachments from the tenant mailbox view. Outbound
-// delivery and billing metadata are retained for auditing.
+// Removes the message body, raw archive, and attachments from the tenant inbox view. Outbound delivery
+// and billing metadata are retained for auditing.
 //
-// DELETE /api/v1/messages/{messageId}
+// DELETE /api/v1/inboxes/{inboxId}/messages/{messageId}
 func (c *Client) DeleteMessage(ctx context.Context, params DeleteMessageParams) error {
 	_, err := c.sendDeleteMessage(ctx, params)
 	return err
@@ -1128,7 +677,7 @@ func (c *Client) sendDeleteMessage(ctx context.Context, params DeleteMessagePara
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("delete-message"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/v1/messages/{messageId}"),
+		semconv.URLTemplateKey.String("/api/v1/inboxes/{inboxId}/messages/{messageId}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -1161,8 +710,27 @@ func (c *Client) sendDeleteMessage(ctx context.Context, params DeleteMessagePara
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/messages/"
+	var pathParts [4]string
+	pathParts[0] = "/api/v1/inboxes/"
+	{
+		// Encode "inboxId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "inboxId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.InboxId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/messages/"
 	{
 		// Encode "messageId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
@@ -1179,7 +747,7 @@ func (c *Client) sendDeleteMessage(ctx context.Context, params DeleteMessagePara
 		if err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
-		pathParts[1] = encoded
+		pathParts[3] = encoded
 	}
 	uri.AddPathParts(u, pathParts[:]...)
 
@@ -1245,298 +813,13 @@ func (c *Client) sendDeleteMessage(ctx context.Context, params DeleteMessagePara
 	return result, nil
 }
 
-// DownloadAccountAttachment invokes download-account-attachment operation.
-//
-// Download a personal account attachment.
-//
-// GET /api/v1/account/attachments/{attachmentId}/content
-func (c *Client) DownloadAccountAttachment(ctx context.Context, params DownloadAccountAttachmentParams) (*DownloadAccountAttachmentOKHeaders, error) {
-	res, err := c.sendDownloadAccountAttachment(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendDownloadAccountAttachment(ctx context.Context, params DownloadAccountAttachmentParams) (res *DownloadAccountAttachmentOKHeaders, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("download-account-attachment"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/account/attachments/{attachmentId}/content"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, DownloadAccountAttachmentOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/account/attachments/"
-	{
-		// Encode "attachmentId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "attachmentId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.AttachmentId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/content"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "inline" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "inline",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Inline.Get(); ok {
-				return e.EncodeValue(conv.BoolToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:AccessTokenAuth"
-			switch err := c.securityAccessTokenAuth(ctx, DownloadAccountAttachmentOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeDownloadAccountAttachmentResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// DownloadAccountMessageRaw invokes download-account-message-raw operation.
-//
-// Download raw RFC 5322 `.eml` source of a personal account message.
-//
-// GET /api/v1/account/messages/{messageId}/raw
-func (c *Client) DownloadAccountMessageRaw(ctx context.Context, params DownloadAccountMessageRawParams) (*DownloadAccountMessageRawOKHeaders, error) {
-	res, err := c.sendDownloadAccountMessageRaw(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendDownloadAccountMessageRaw(ctx context.Context, params DownloadAccountMessageRawParams) (res *DownloadAccountMessageRawOKHeaders, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("download-account-message-raw"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/account/messages/{messageId}/raw"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, DownloadAccountMessageRawOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/account/messages/"
-	{
-		// Encode "messageId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "messageId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.MessageId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/raw"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:AccessTokenAuth"
-			switch err := c.securityAccessTokenAuth(ctx, DownloadAccountMessageRawOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeDownloadAccountMessageRawResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // DownloadAttachment invokes download-attachment operation.
 //
-// Streams the attachment bytes for an inbound or outbound message in the authenticated project.
+// Streams the attachment bytes for an inbound or outbound message in the specified inbox.
 // `Content-Disposition` is `attachment` unless `inline=true` is requested and the detected content
 // type can be rendered safely.
 //
-// GET /api/v1/attachments/{attachmentId}/content
+// GET /api/v1/inboxes/{inboxId}/attachments/{attachmentId}/content
 func (c *Client) DownloadAttachment(ctx context.Context, params DownloadAttachmentParams) (*DownloadAttachmentOKHeaders, error) {
 	res, err := c.sendDownloadAttachment(ctx, params)
 	return res, err
@@ -1546,7 +829,7 @@ func (c *Client) sendDownloadAttachment(ctx context.Context, params DownloadAtta
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("download-attachment"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/attachments/{attachmentId}/content"),
+		semconv.URLTemplateKey.String("/api/v1/inboxes/{inboxId}/attachments/{attachmentId}/content"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -1579,8 +862,27 @@ func (c *Client) sendDownloadAttachment(ctx context.Context, params DownloadAtta
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/attachments/"
+	var pathParts [5]string
+	pathParts[0] = "/api/v1/inboxes/"
+	{
+		// Encode "inboxId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "inboxId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.InboxId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/attachments/"
 	{
 		// Encode "attachmentId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
@@ -1597,9 +899,9 @@ func (c *Client) sendDownloadAttachment(ctx context.Context, params DownloadAtta
 		if err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
-		pathParts[1] = encoded
+		pathParts[3] = encoded
 	}
-	pathParts[2] = "/content"
+	pathParts[4] = "/content"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeQueryParams"
@@ -1687,9 +989,9 @@ func (c *Client) sendDownloadAttachment(ctx context.Context, params DownloadAtta
 
 // DownloadMessageRaw invokes download-message-raw operation.
 //
-// Download raw RFC 5322 `.eml` source of a project message.
+// Download raw RFC 5322 `.eml` source of a message.
 //
-// GET /api/v1/messages/{messageId}/raw
+// GET /api/v1/inboxes/{inboxId}/messages/{messageId}/raw
 func (c *Client) DownloadMessageRaw(ctx context.Context, params DownloadMessageRawParams) (*DownloadMessageRawOKHeaders, error) {
 	res, err := c.sendDownloadMessageRaw(ctx, params)
 	return res, err
@@ -1699,7 +1001,7 @@ func (c *Client) sendDownloadMessageRaw(ctx context.Context, params DownloadMess
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("download-message-raw"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/messages/{messageId}/raw"),
+		semconv.URLTemplateKey.String("/api/v1/inboxes/{inboxId}/messages/{messageId}/raw"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -1732,8 +1034,27 @@ func (c *Client) sendDownloadMessageRaw(ctx context.Context, params DownloadMess
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/messages/"
+	var pathParts [5]string
+	pathParts[0] = "/api/v1/inboxes/"
+	{
+		// Encode "inboxId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "inboxId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.InboxId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/messages/"
 	{
 		// Encode "messageId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
@@ -1750,9 +1071,9 @@ func (c *Client) sendDownloadMessageRaw(ctx context.Context, params DownloadMess
 		if err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
-		pathParts[1] = encoded
+		pathParts[3] = encoded
 	}
-	pathParts[2] = "/raw"
+	pathParts[4] = "/raw"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -1817,542 +1138,12 @@ func (c *Client) sendDownloadMessageRaw(ctx context.Context, params DownloadMess
 	return result, nil
 }
 
-// GetAccountMailbox invokes get-account-mailbox operation.
-//
-// Returns the caller's personal mailbox allocation status, default email address, forwarding
-// preferences, daily reply quota usage, and outbound state. Inbound mail, forwarding to the account's
-// verified email address, and replies to existing inbound threads are free.
-//
-// GET /api/v1/account/mailbox
-func (c *Client) GetAccountMailbox(ctx context.Context) (*AccountMailboxResource, error) {
-	res, err := c.sendGetAccountMailbox(ctx)
-	return res, err
-}
-
-func (c *Client) sendGetAccountMailbox(ctx context.Context) (res *AccountMailboxResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-account-mailbox"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/account/mailbox"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetAccountMailboxOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/account/mailbox"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:AccessTokenAuth"
-			switch err := c.securityAccessTokenAuth(ctx, GetAccountMailboxOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeGetAccountMailboxResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// GetAccountMessage invokes get-account-message operation.
-//
-// Get a personal account message.
-//
-// GET /api/v1/account/messages/{messageId}
-func (c *Client) GetAccountMessage(ctx context.Context, params GetAccountMessageParams) (*MessageResource, error) {
-	res, err := c.sendGetAccountMessage(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendGetAccountMessage(ctx context.Context, params GetAccountMessageParams) (res *MessageResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-account-message"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/account/messages/{messageId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetAccountMessageOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/account/messages/"
-	{
-		// Encode "messageId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "messageId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.MessageId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "include_html" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "include_html",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.IncludeHTML.Get(); ok {
-				return e.EncodeValue(conv.BoolToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:AccessTokenAuth"
-			switch err := c.securityAccessTokenAuth(ctx, GetAccountMessageOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeGetAccountMessageResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// GetAccountMessageHeaders invokes get-account-message-headers operation.
-//
-// Get raw RFC 5322 headers of a personal account message.
-//
-// GET /api/v1/account/messages/{messageId}/headers
-func (c *Client) GetAccountMessageHeaders(ctx context.Context, params GetAccountMessageHeadersParams) (*MessageHeadersResource, error) {
-	res, err := c.sendGetAccountMessageHeaders(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendGetAccountMessageHeaders(ctx context.Context, params GetAccountMessageHeadersParams) (res *MessageHeadersResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-account-message-headers"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/account/messages/{messageId}/headers"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetAccountMessageHeadersOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/account/messages/"
-	{
-		// Encode "messageId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "messageId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.MessageId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/headers"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:AccessTokenAuth"
-			switch err := c.securityAccessTokenAuth(ctx, GetAccountMessageHeadersOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeGetAccountMessageHeadersResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// GetAccountThread invokes get-account-thread operation.
-//
-// Get a personal account email thread.
-//
-// GET /api/v1/account/threads/{threadId}
-func (c *Client) GetAccountThread(ctx context.Context, params GetAccountThreadParams) (*ThreadResource, error) {
-	res, err := c.sendGetAccountThread(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendGetAccountThread(ctx context.Context, params GetAccountThreadParams) (res *ThreadResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-account-thread"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/account/threads/{threadId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetAccountThreadOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/account/threads/"
-	{
-		// Encode "threadId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "threadId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.ThreadId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:AccessTokenAuth"
-			switch err := c.securityAccessTokenAuth(ctx, GetAccountThreadOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeGetAccountThreadResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // GetEnablement invokes get-enablement operation.
 //
-// Returns the mail service enablement of the authenticated project. Once `status` is `active`, default
-// email addresses are provisioned for active service accounts in the project, inbound delivery is
-// accepted at no charge, and outbound sends are billed per accepted recipient under `subscription_id`
-// (unless `billing_suspended` is true).
+// Returns the mail service enablement of the authenticated project. Once `status` is `active`, inboxes
+// are provisioned for active project members (human members and service accounts alike), inbound
+// delivery is accepted at no charge, and outbound sends are billed per accepted recipient under
+// `subscription_id` (unless `billing_suspended` is true).
 //
 // GET /api/v1/enablement
 func (c *Client) GetEnablement(ctx context.Context) (*EnablementResource, error) {
@@ -2463,21 +1254,21 @@ func (c *Client) sendGetEnablement(ctx context.Context) (res *EnablementResource
 	return result, nil
 }
 
-// GetMailbox invokes get-mailbox operation.
+// GetInbox invokes get-inbox operation.
 //
-// Returns a single mailbox's address allocation status, outbound state, and unread count.
+// Get an inbox.
 //
-// GET /api/v1/mailboxes/{mailboxId}
-func (c *Client) GetMailbox(ctx context.Context, params GetMailboxParams) (*MailboxResource, error) {
-	res, err := c.sendGetMailbox(ctx, params)
+// GET /api/v1/inboxes/{inboxId}
+func (c *Client) GetInbox(ctx context.Context, params GetInboxParams) (*InboxResource, error) {
+	res, err := c.sendGetInbox(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendGetMailbox(ctx context.Context, params GetMailboxParams) (res *MailboxResource, err error) {
+func (c *Client) sendGetInbox(ctx context.Context, params GetInboxParams) (res *InboxResource, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-mailbox"),
+		otelogen.OperationID("get-inbox"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/mailboxes/{mailboxId}"),
+		semconv.URLTemplateKey.String("/api/v1/inboxes/{inboxId}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -2493,7 +1284,7 @@ func (c *Client) sendGetMailbox(ctx context.Context, params GetMailboxParams) (r
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetMailboxOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, GetInboxOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -2511,16 +1302,16 @@ func (c *Client) sendGetMailbox(ctx context.Context, params GetMailboxParams) (r
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [2]string
-	pathParts[0] = "/api/v1/mailboxes/"
+	pathParts[0] = "/api/v1/inboxes/"
 	{
-		// Encode "mailboxId" parameter.
+		// Encode "inboxId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "mailboxId",
+			Param:   "inboxId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.MailboxId))
+			return e.EncodeValue(conv.UUIDToString(params.InboxId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -2543,7 +1334,7 @@ func (c *Client) sendGetMailbox(ctx context.Context, params GetMailboxParams) (r
 		var satisfied bitset
 		{
 			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, GetMailboxOperation, r); {
+			switch err := c.securityBearerAuth(ctx, GetInboxOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -2586,7 +1377,7 @@ func (c *Client) sendGetMailbox(ctx context.Context, params GetMailboxParams) (r
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeGetMailboxResponse(resp)
+	result, err := decodeGetInboxResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -2599,7 +1390,7 @@ func (c *Client) sendGetMailbox(ctx context.Context, params GetMailboxParams) (r
 // Returns full message details including plain-text body, server-sanitized HTML body (unless
 // `include_html=false`), attachments, and per-recipient delivery statuses.
 //
-// GET /api/v1/messages/{messageId}
+// GET /api/v1/inboxes/{inboxId}/messages/{messageId}
 func (c *Client) GetMessage(ctx context.Context, params GetMessageParams) (*MessageResource, error) {
 	res, err := c.sendGetMessage(ctx, params)
 	return res, err
@@ -2609,7 +1400,7 @@ func (c *Client) sendGetMessage(ctx context.Context, params GetMessageParams) (r
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-message"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/messages/{messageId}"),
+		semconv.URLTemplateKey.String("/api/v1/inboxes/{inboxId}/messages/{messageId}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -2642,8 +1433,27 @@ func (c *Client) sendGetMessage(ctx context.Context, params GetMessageParams) (r
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/messages/"
+	var pathParts [4]string
+	pathParts[0] = "/api/v1/inboxes/"
+	{
+		// Encode "inboxId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "inboxId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.InboxId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/messages/"
 	{
 		// Encode "messageId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
@@ -2660,7 +1470,7 @@ func (c *Client) sendGetMessage(ctx context.Context, params GetMessageParams) (r
 		if err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
-		pathParts[1] = encoded
+		pathParts[3] = encoded
 	}
 	uri.AddPathParts(u, pathParts[:]...)
 
@@ -2749,9 +1559,9 @@ func (c *Client) sendGetMessage(ctx context.Context, params GetMessageParams) (r
 
 // GetMessageHeaders invokes get-message-headers operation.
 //
-// Get raw RFC 5322 headers of a project message.
+// Get raw RFC 5322 headers of a message.
 //
-// GET /api/v1/messages/{messageId}/headers
+// GET /api/v1/inboxes/{inboxId}/messages/{messageId}/headers
 func (c *Client) GetMessageHeaders(ctx context.Context, params GetMessageHeadersParams) (*MessageHeadersResource, error) {
 	res, err := c.sendGetMessageHeaders(ctx, params)
 	return res, err
@@ -2761,7 +1571,7 @@ func (c *Client) sendGetMessageHeaders(ctx context.Context, params GetMessageHea
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-message-headers"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/messages/{messageId}/headers"),
+		semconv.URLTemplateKey.String("/api/v1/inboxes/{inboxId}/messages/{messageId}/headers"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -2794,8 +1604,27 @@ func (c *Client) sendGetMessageHeaders(ctx context.Context, params GetMessageHea
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/messages/"
+	var pathParts [5]string
+	pathParts[0] = "/api/v1/inboxes/"
+	{
+		// Encode "inboxId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "inboxId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.InboxId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/messages/"
 	{
 		// Encode "messageId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
@@ -2812,9 +1641,9 @@ func (c *Client) sendGetMessageHeaders(ctx context.Context, params GetMessageHea
 		if err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
-		pathParts[1] = encoded
+		pathParts[3] = encoded
 	}
-	pathParts[2] = "/headers"
+	pathParts[4] = "/headers"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -2881,9 +1710,9 @@ func (c *Client) sendGetMessageHeaders(ctx context.Context, params GetMessageHea
 
 // GetThread invokes get-thread operation.
 //
-// Get a project email thread.
+// Get a thread in an inbox.
 //
-// GET /api/v1/threads/{threadId}
+// GET /api/v1/inboxes/{inboxId}/threads/{threadId}
 func (c *Client) GetThread(ctx context.Context, params GetThreadParams) (*ThreadResource, error) {
 	res, err := c.sendGetThread(ctx, params)
 	return res, err
@@ -2893,7 +1722,7 @@ func (c *Client) sendGetThread(ctx context.Context, params GetThreadParams) (res
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-thread"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/threads/{threadId}"),
+		semconv.URLTemplateKey.String("/api/v1/inboxes/{inboxId}/threads/{threadId}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -2926,8 +1755,27 @@ func (c *Client) sendGetThread(ctx context.Context, params GetThreadParams) (res
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/threads/"
+	var pathParts [4]string
+	pathParts[0] = "/api/v1/inboxes/"
+	{
+		// Encode "inboxId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "inboxId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.InboxId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/threads/"
 	{
 		// Encode "threadId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
@@ -2944,7 +1792,7 @@ func (c *Client) sendGetThread(ctx context.Context, params GetThreadParams) (res
 		if err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
-		pathParts[1] = encoded
+		pathParts[3] = encoded
 	}
 	uri.AddPathParts(u, pathParts[:]...)
 
@@ -3094,15 +1942,15 @@ func (c *Client) sendGetUsage(ctx context.Context, params GetUsageParams) (res *
 		}
 	}
 	{
-		// Encode "mailbox_id" parameter.
+		// Encode "inbox_id" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "mailbox_id",
+			Name:    "inbox_id",
 			Style:   uri.QueryStyleForm,
 			Explode: false,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.MailboxID.Get(); ok {
+			if val, ok := params.InboxID.Get(); ok {
 				return e.EncodeValue(conv.UUIDToString(val))
 			}
 			return nil
@@ -3111,16 +1959,16 @@ func (c *Client) sendGetUsage(ctx context.Context, params GetUsageParams) (res *
 		}
 	}
 	{
-		// Encode "service_account_id" parameter.
+		// Encode "user_id" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "service_account_id",
+			Name:    "user_id",
 			Style:   uri.QueryStyleForm,
 			Explode: false,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.ServiceAccountID.Get(); ok {
-				return e.EncodeValue(conv.UUIDToString(val))
+			if val, ok := params.UserID.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
 			}
 			return nil
 		}); err != nil {
@@ -3191,21 +2039,22 @@ func (c *Client) sendGetUsage(ctx context.Context, params GetUsageParams) (res *
 	return result, nil
 }
 
-// ListAccountMessages invokes list-account-messages operation.
+// ListInboxThreads invokes list-inbox-threads operation.
 //
-// Cursor-paged lightweight message summaries in the caller's personal mailbox, newest first.
+// Cursor-paged conversation threads belonging to the specified inbox, ordered by most recent message
+// first.
 //
-// GET /api/v1/account/messages
-func (c *Client) ListAccountMessages(ctx context.Context, params ListAccountMessagesParams) (*MessageSummaryListResponseBody, error) {
-	res, err := c.sendListAccountMessages(ctx, params)
+// GET /api/v1/inboxes/{inboxId}/threads
+func (c *Client) ListInboxThreads(ctx context.Context, params ListInboxThreadsParams) (*ThreadListResponseBody, error) {
+	res, err := c.sendListInboxThreads(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendListAccountMessages(ctx context.Context, params ListAccountMessagesParams) (res *MessageSummaryListResponseBody, err error) {
+func (c *Client) sendListInboxThreads(ctx context.Context, params ListInboxThreadsParams) (res *ThreadListResponseBody, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-account-messages"),
+		otelogen.OperationID("list-inbox-threads"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/account/messages"),
+		semconv.URLTemplateKey.String("/api/v1/inboxes/{inboxId}/threads"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -3221,312 +2070,7 @@ func (c *Client) sendListAccountMessages(ctx context.Context, params ListAccount
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListAccountMessagesOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/account/messages"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "limit" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "limit",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Limit.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "cursor" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "cursor",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Cursor.Get(); ok {
-				return e.EncodeValue(conv.StringToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "thread_id" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "thread_id",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.ThreadID.Get(); ok {
-				return e.EncodeValue(conv.UUIDToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "direction" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "direction",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if params.Direction != nil {
-				return e.EncodeArray(func(e uri.Encoder) error {
-					for i, item := range params.Direction {
-						if err := func() error {
-							return e.EncodeValue(conv.StringToString(string(item)))
-						}(); err != nil {
-							return errors.Wrapf(err, "[%d]", i)
-						}
-					}
-					return nil
-				})
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "status" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "status",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if params.Status != nil {
-				return e.EncodeArray(func(e uri.Encoder) error {
-					for i, item := range params.Status {
-						if err := func() error {
-							return e.EncodeValue(conv.StringToString(string(item)))
-						}(); err != nil {
-							return errors.Wrapf(err, "[%d]", i)
-						}
-					}
-					return nil
-				})
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "from_address" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "from_address",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.FromAddress.Get(); ok {
-				return e.EncodeValue(conv.StringToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "q" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "q",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Q.Get(); ok {
-				return e.EncodeValue(conv.StringToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "unread_only" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "unread_only",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.UnreadOnly.Get(); ok {
-				return e.EncodeValue(conv.BoolToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "flagged_only" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "flagged_only",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.FlaggedOnly.Get(); ok {
-				return e.EncodeValue(conv.BoolToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "has_attachments" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "has_attachments",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.HasAttachments.Get(); ok {
-				return e.EncodeValue(conv.BoolToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:AccessTokenAuth"
-			switch err := c.securityAccessTokenAuth(ctx, ListAccountMessagesOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListAccountMessagesResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ListAccountThreadMessages invokes list-account-thread-messages operation.
-//
-// Cursor-paged lightweight message summaries belonging to the personal thread, oldest first.
-//
-// GET /api/v1/account/threads/{threadId}/messages
-func (c *Client) ListAccountThreadMessages(ctx context.Context, params ListAccountThreadMessagesParams) (*MessageSummaryListResponseBody, error) {
-	res, err := c.sendListAccountThreadMessages(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListAccountThreadMessages(ctx context.Context, params ListAccountThreadMessagesParams) (res *MessageSummaryListResponseBody, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-account-thread-messages"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/account/threads/{threadId}/messages"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListAccountThreadMessagesOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, ListInboxThreadsOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -3544,16 +2088,16 @@ func (c *Client) sendListAccountThreadMessages(ctx context.Context, params ListA
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [3]string
-	pathParts[0] = "/api/v1/account/threads/"
+	pathParts[0] = "/api/v1/inboxes/"
 	{
-		// Encode "threadId" parameter.
+		// Encode "inboxId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "threadId",
+			Param:   "inboxId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.ThreadId))
+			return e.EncodeValue(conv.UUIDToString(params.InboxId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -3563,158 +2107,7 @@ func (c *Client) sendListAccountThreadMessages(ctx context.Context, params ListA
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/messages"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "limit" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "limit",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Limit.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "cursor" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "cursor",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Cursor.Get(); ok {
-				return e.EncodeValue(conv.StringToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:AccessTokenAuth"
-			switch err := c.securityAccessTokenAuth(ctx, ListAccountThreadMessagesOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListAccountThreadMessagesResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ListAccountThreads invokes list-account-threads operation.
-//
-// Cursor-paged threads in the caller's personal mailbox, most recent first.
-//
-// GET /api/v1/account/threads
-func (c *Client) ListAccountThreads(ctx context.Context, params ListAccountThreadsParams) (*ThreadListResponseBody, error) {
-	res, err := c.sendListAccountThreads(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListAccountThreads(ctx context.Context, params ListAccountThreadsParams) (res *ThreadListResponseBody, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-account-threads"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/account/threads"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListAccountThreadsOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/account/threads"
+	pathParts[2] = "/threads"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeQueryParams"
@@ -3788,15 +2181,15 @@ func (c *Client) sendListAccountThreads(ctx context.Context, params ListAccountT
 		}
 	}
 	{
-		// Encode "q" parameter.
+		// Encode "keyword" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "q",
+			Name:    "keyword",
 			Style:   uri.QueryStyleForm,
 			Explode: false,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Q.Get(); ok {
+			if val, ok := params.Keyword.Get(); ok {
 				return e.EncodeValue(conv.StringToString(val))
 			}
 			return nil
@@ -3816,14 +2209,14 @@ func (c *Client) sendListAccountThreads(ctx context.Context, params ListAccountT
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:AccessTokenAuth"
-			switch err := c.securityAccessTokenAuth(ctx, ListAccountThreadsOperation, r); {
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, ListInboxThreadsOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
 			}
 		}
 
@@ -3860,7 +2253,7 @@ func (c *Client) sendListAccountThreads(ctx context.Context, params ListAccountT
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeListAccountThreadsResponse(resp)
+	result, err := decodeListInboxThreadsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -3868,23 +2261,22 @@ func (c *Client) sendListAccountThreads(ctx context.Context, params ListAccountT
 	return result, nil
 }
 
-// ListMailboxes invokes list-mailboxes operation.
+// ListInboxes invokes list-inboxes operation.
 //
-// Lists mailboxes in the authenticated project together with each mailbox's email address allocation
-// status and outbound state. Returns an empty list before the project enables the mail service. When
-// called with a service account token, only that service account's own mailbox is returned.
+// Lists inboxes provisioned for members of the authenticated project (both human members and service
+// accounts). Service account tokens only receive their own inbox.
 //
-// GET /api/v1/mailboxes
-func (c *Client) ListMailboxes(ctx context.Context, params ListMailboxesParams) (*MailboxListResponseBody, error) {
-	res, err := c.sendListMailboxes(ctx, params)
+// GET /api/v1/inboxes
+func (c *Client) ListInboxes(ctx context.Context, params ListInboxesParams) (*InboxListResponseBody, error) {
+	res, err := c.sendListInboxes(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendListMailboxes(ctx context.Context, params ListMailboxesParams) (res *MailboxListResponseBody, err error) {
+func (c *Client) sendListInboxes(ctx context.Context, params ListInboxesParams) (res *InboxListResponseBody, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-mailboxes"),
+		otelogen.OperationID("list-inboxes"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/mailboxes"),
+		semconv.URLTemplateKey.String("/api/v1/inboxes"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -3900,7 +2292,7 @@ func (c *Client) sendListMailboxes(ctx context.Context, params ListMailboxesPara
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListMailboxesOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, ListInboxesOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -3918,7 +2310,7 @@ func (c *Client) sendListMailboxes(ctx context.Context, params ListMailboxesPara
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [1]string
-	pathParts[0] = "/api/v1/mailboxes"
+	pathParts[0] = "/api/v1/inboxes"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeQueryParams"
@@ -3958,42 +2350,16 @@ func (c *Client) sendListMailboxes(ctx context.Context, params ListMailboxesPara
 		}
 	}
 	{
-		// Encode "service_account_id" parameter.
+		// Encode "user_id" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "service_account_id",
+			Name:    "user_id",
 			Style:   uri.QueryStyleForm,
 			Explode: false,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.ServiceAccountID.Get(); ok {
-				return e.EncodeValue(conv.UUIDToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "allocation_status" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "allocation_status",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if params.AllocationStatus != nil {
-				return e.EncodeArray(func(e uri.Encoder) error {
-					for i, item := range params.AllocationStatus {
-						if err := func() error {
-							return e.EncodeValue(conv.StringToString(string(item)))
-						}(); err != nil {
-							return errors.Wrapf(err, "[%d]", i)
-						}
-					}
-					return nil
-				})
+			if val, ok := params.UserID.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
 			}
 			return nil
 		}); err != nil {
@@ -4056,7 +2422,7 @@ func (c *Client) sendListMailboxes(ctx context.Context, params ListMailboxesPara
 		var satisfied bitset
 		{
 			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListMailboxesOperation, r); {
+			switch err := c.securityBearerAuth(ctx, ListInboxesOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -4099,7 +2465,7 @@ func (c *Client) sendListMailboxes(ctx context.Context, params ListMailboxesPara
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeListMailboxesResponse(resp)
+	result, err := decodeListInboxesResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -4109,11 +2475,10 @@ func (c *Client) sendListMailboxes(ctx context.Context, params ListMailboxesPara
 
 // ListMessages invokes list-messages operation.
 //
-// Cursor-paged lightweight message summaries, newest first, without full body payloads. Service
-// account tokens are automatically restricted to their own mailbox. Call `get-message` to read full
-// plain-text or sanitized HTML bodies and attachments.
+// Cursor-paged lightweight message summaries, newest first, without full body payloads. Call
+// `get-message` to read full plain-text or sanitized HTML bodies and attachments.
 //
-// GET /api/v1/messages
+// GET /api/v1/inboxes/{inboxId}/messages
 func (c *Client) ListMessages(ctx context.Context, params ListMessagesParams) (*MessageSummaryListResponseBody, error) {
 	res, err := c.sendListMessages(ctx, params)
 	return res, err
@@ -4123,7 +2488,7 @@ func (c *Client) sendListMessages(ctx context.Context, params ListMessagesParams
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-messages"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/messages"),
+		semconv.URLTemplateKey.String("/api/v1/inboxes/{inboxId}/messages"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -4156,8 +2521,27 @@ func (c *Client) sendListMessages(ctx context.Context, params ListMessagesParams
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/messages"
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/inboxes/"
+	{
+		// Encode "inboxId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "inboxId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.InboxId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/messages"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeQueryParams"
@@ -4190,40 +2574,6 @@ func (c *Client) sendListMessages(ctx context.Context, params ListMessagesParams
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
 			if val, ok := params.Cursor.Get(); ok {
 				return e.EncodeValue(conv.StringToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "mailbox_id" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "mailbox_id",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.MailboxID.Get(); ok {
-				return e.EncodeValue(conv.UUIDToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "service_account_id" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "service_account_id",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.ServiceAccountID.Get(); ok {
-				return e.EncodeValue(conv.UUIDToString(val))
 			}
 			return nil
 		}); err != nil {
@@ -4696,10 +3046,10 @@ func (c *Client) sendListSuppressions(ctx context.Context, params ListSuppressio
 
 // ListThreadMessages invokes list-thread-messages operation.
 //
-// Cursor-paged lightweight message summaries belonging to the thread, oldest first. Fetch full body
-// content via `get-message`.
+// Returns lightweight message summaries in chronological order (oldest first) for thread rendering.
+// Call `get-message` for full bodies and attachments.
 //
-// GET /api/v1/threads/{threadId}/messages
+// GET /api/v1/inboxes/{inboxId}/threads/{threadId}/messages
 func (c *Client) ListThreadMessages(ctx context.Context, params ListThreadMessagesParams) (*MessageSummaryListResponseBody, error) {
 	res, err := c.sendListThreadMessages(ctx, params)
 	return res, err
@@ -4709,7 +3059,7 @@ func (c *Client) sendListThreadMessages(ctx context.Context, params ListThreadMe
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-thread-messages"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/threads/{threadId}/messages"),
+		semconv.URLTemplateKey.String("/api/v1/inboxes/{inboxId}/threads/{threadId}/messages"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -4742,8 +3092,27 @@ func (c *Client) sendListThreadMessages(ctx context.Context, params ListThreadMe
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/threads/"
+	var pathParts [5]string
+	pathParts[0] = "/api/v1/inboxes/"
+	{
+		// Encode "inboxId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "inboxId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.InboxId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/threads/"
 	{
 		// Encode "threadId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
@@ -4760,9 +3129,9 @@ func (c *Client) sendListThreadMessages(ctx context.Context, params ListThreadMe
 		if err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
-		pathParts[1] = encoded
+		pathParts[3] = encoded
 	}
-	pathParts[2] = "/messages"
+	pathParts[4] = "/messages"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeQueryParams"
@@ -4867,8 +3236,8 @@ func (c *Client) sendListThreadMessages(ctx context.Context, params ListThreadMe
 
 // ListThreads invokes list-threads operation.
 //
-// Cursor-paged conversation threads ordered by most recent message first. Service account tokens are
-// automatically restricted to their own mailbox.
+// Cursor-paged conversation threads across the authenticated project, ordered by most recent message
+// first. Service account tokens are automatically restricted to their own inbox.
 //
 // GET /api/v1/threads
 func (c *Client) ListThreads(ctx context.Context, params ListThreadsParams) (*ThreadListResponseBody, error) {
@@ -4954,32 +3323,15 @@ func (c *Client) sendListThreads(ctx context.Context, params ListThreadsParams) 
 		}
 	}
 	{
-		// Encode "mailbox_id" parameter.
+		// Encode "inbox_id" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "mailbox_id",
+			Name:    "inbox_id",
 			Style:   uri.QueryStyleForm,
 			Explode: false,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.MailboxID.Get(); ok {
-				return e.EncodeValue(conv.UUIDToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "service_account_id" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "service_account_id",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.ServiceAccountID.Get(); ok {
+			if val, ok := params.InboxID.Get(); ok {
 				return e.EncodeValue(conv.UUIDToString(val))
 			}
 			return nil
@@ -5022,15 +3374,15 @@ func (c *Client) sendListThreads(ctx context.Context, params ListThreadsParams) 
 		}
 	}
 	{
-		// Encode "q" parameter.
+		// Encode "keyword" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "q",
+			Name:    "keyword",
 			Style:   uri.QueryStyleForm,
 			Explode: false,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Q.Get(); ok {
+			if val, ok := params.Keyword.Get(); ok {
 				return e.EncodeValue(conv.StringToString(val))
 			}
 			return nil
@@ -5102,22 +3454,21 @@ func (c *Client) sendListThreads(ctx context.Context, params ListThreadsParams) 
 	return result, nil
 }
 
-// PauseMailboxOutbound invokes pause-mailbox-outbound operation.
+// PauseInboxOutbound invokes pause-inbox-outbound operation.
 //
-// Immediately prevents outbound sending from this mailbox while keeping inbound delivery active.
-// Useful for stopping a runaway automated sender.
+// Stops outbound sending from the inbox while keeping inbound mail delivery active.
 //
-// POST /api/v1/mailboxes/{mailboxId}:pauseOutbound
-func (c *Client) PauseMailboxOutbound(ctx context.Context, params PauseMailboxOutboundParams) (*MailboxResource, error) {
-	res, err := c.sendPauseMailboxOutbound(ctx, params)
+// POST /api/v1/inboxes/{inboxId}:pauseOutbound
+func (c *Client) PauseInboxOutbound(ctx context.Context, params PauseInboxOutboundParams) (*InboxResource, error) {
+	res, err := c.sendPauseInboxOutbound(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendPauseMailboxOutbound(ctx context.Context, params PauseMailboxOutboundParams) (res *MailboxResource, err error) {
+func (c *Client) sendPauseInboxOutbound(ctx context.Context, params PauseInboxOutboundParams) (res *InboxResource, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("pause-mailbox-outbound"),
+		otelogen.OperationID("pause-inbox-outbound"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/mailboxes/{mailboxId}:pauseOutbound"),
+		semconv.URLTemplateKey.String("/api/v1/inboxes/{inboxId}:pauseOutbound"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -5133,7 +3484,7 @@ func (c *Client) sendPauseMailboxOutbound(ctx context.Context, params PauseMailb
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, PauseMailboxOutboundOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, PauseInboxOutboundOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -5151,16 +3502,16 @@ func (c *Client) sendPauseMailboxOutbound(ctx context.Context, params PauseMailb
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [3]string
-	pathParts[0] = "/api/v1/mailboxes/"
+	pathParts[0] = "/api/v1/inboxes/"
 	{
-		// Encode "mailboxId" parameter.
+		// Encode "inboxId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "mailboxId",
+			Param:   "inboxId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.MailboxId))
+			return e.EncodeValue(conv.UUIDToString(params.InboxId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -5184,7 +3535,7 @@ func (c *Client) sendPauseMailboxOutbound(ctx context.Context, params PauseMailb
 		var satisfied bitset
 		{
 			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, PauseMailboxOutboundOperation, r); {
+			switch err := c.securityBearerAuth(ctx, PauseInboxOutboundOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -5227,170 +3578,7 @@ func (c *Client) sendPauseMailboxOutbound(ctx context.Context, params PauseMailb
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodePauseMailboxOutboundResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ReplyAccountThread invokes reply-account-thread operation.
-//
-// Sends a free single-recipient reply from the caller's personal mailbox to the verified external
-// sender of an existing inbound thread. The recipient is fixed by the thread and cannot be overridden;
-// subject to hourly and daily anti-abuse limits.
-//
-// POST /api/v1/account/threads/{threadId}:reply
-func (c *Client) ReplyAccountThread(ctx context.Context, request *ReplyAccountThreadRequestBody, params ReplyAccountThreadParams) (*MessageResource, error) {
-	res, err := c.sendReplyAccountThread(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendReplyAccountThread(ctx context.Context, request *ReplyAccountThreadRequestBody, params ReplyAccountThreadParams) (res *MessageResource, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("reply-account-thread"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/account/threads/{threadId}:reply"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ReplyAccountThreadOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/account/threads/"
-	{
-		// Encode "threadId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "threadId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.ThreadId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = ":reply"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeReplyAccountThreadRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.IdempotencyKey.Get(); ok {
-				return e.EncodeValue(conv.StringToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:AccessTokenAuth"
-			switch err := c.securityAccessTokenAuth(ctx, ReplyAccountThreadOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeReplyAccountThreadResponse(resp)
+	result, err := decodePauseInboxOutboundResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -5400,15 +3588,11 @@ func (c *Client) sendReplyAccountThread(ctx context.Context, request *ReplyAccou
 
 // ReplyMessage invokes reply-message operation.
 //
-// Sends a billed outbound reply from the original message's mailbox while automatically preserving
-// `In-Reply-To`, `References`, and `Re:` subject folding.
+// Sends an outbound reply from the inbox while preserving `In-Reply-To`, `References`, and `Re:`
+// subject folding. Defaults to replying to the original message's `reply_to` (or `from` if absent);
+// pass `reply_all=true` to include original `to` and `cc` recipients.
 //
-// Defaults to replying to the original message's `reply_to` (or `from` if absent). When `reply_all` is
-// true, deduplicated recipients from the original `to` and `cc` (excluding the sending mailbox's own
-// address) are added to `cc`. Additional `cc` and `bcc` recipients may also be specified; total
-// recipients must not exceed 50.
-//
-// POST /api/v1/messages/{messageId}:reply
+// POST /api/v1/inboxes/{inboxId}/messages/{messageId}:reply
 func (c *Client) ReplyMessage(ctx context.Context, request *ReplyMessageRequestBody, params ReplyMessageParams) (*MessageResource, error) {
 	res, err := c.sendReplyMessage(ctx, request, params)
 	return res, err
@@ -5427,7 +3611,7 @@ func (c *Client) sendReplyMessage(ctx context.Context, request *ReplyMessageRequ
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("reply-message"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/messages/{messageId}:reply"),
+		semconv.URLTemplateKey.String("/api/v1/inboxes/{inboxId}/messages/{messageId}:reply"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -5460,8 +3644,27 @@ func (c *Client) sendReplyMessage(ctx context.Context, request *ReplyMessageRequ
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/messages/"
+	var pathParts [5]string
+	pathParts[0] = "/api/v1/inboxes/"
+	{
+		// Encode "inboxId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "inboxId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.InboxId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/messages/"
 	{
 		// Encode "messageId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
@@ -5478,9 +3681,9 @@ func (c *Client) sendReplyMessage(ctx context.Context, request *ReplyMessageRequ
 		if err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
-		pathParts[1] = encoded
+		pathParts[3] = encoded
 	}
-	pathParts[2] = ":reply"
+	pathParts[4] = ":reply"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -5565,22 +3768,23 @@ func (c *Client) sendReplyMessage(ctx context.Context, request *ReplyMessageRequ
 	return result, nil
 }
 
-// ResumeMailboxOutbound invokes resume-mailbox-outbound operation.
+// ResumeInboxOutbound invokes resume-inbox-outbound operation.
 //
-// Resumes outbound sending on a mailbox paused by the project or paused automatically for reputation
-// protection. Operator suspensions cannot be cleared here and return 412 `MAIL_MAILBOX_PAUSED`.
+// Resumes outbound sending for a project-paused or reputation-paused inbox. Operator suspensions
+// (`suspended`) cannot be lifted by project users and return 403
+// `MAIL_OUTBOUND_SUSPENDED_BY_OPERATOR`.
 //
-// POST /api/v1/mailboxes/{mailboxId}:resumeOutbound
-func (c *Client) ResumeMailboxOutbound(ctx context.Context, params ResumeMailboxOutboundParams) (*MailboxResource, error) {
-	res, err := c.sendResumeMailboxOutbound(ctx, params)
+// POST /api/v1/inboxes/{inboxId}:resumeOutbound
+func (c *Client) ResumeInboxOutbound(ctx context.Context, params ResumeInboxOutboundParams) (*InboxResource, error) {
+	res, err := c.sendResumeInboxOutbound(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendResumeMailboxOutbound(ctx context.Context, params ResumeMailboxOutboundParams) (res *MailboxResource, err error) {
+func (c *Client) sendResumeInboxOutbound(ctx context.Context, params ResumeInboxOutboundParams) (res *InboxResource, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("resume-mailbox-outbound"),
+		otelogen.OperationID("resume-inbox-outbound"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/mailboxes/{mailboxId}:resumeOutbound"),
+		semconv.URLTemplateKey.String("/api/v1/inboxes/{inboxId}:resumeOutbound"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -5596,7 +3800,7 @@ func (c *Client) sendResumeMailboxOutbound(ctx context.Context, params ResumeMai
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ResumeMailboxOutboundOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, ResumeInboxOutboundOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -5614,16 +3818,16 @@ func (c *Client) sendResumeMailboxOutbound(ctx context.Context, params ResumeMai
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [3]string
-	pathParts[0] = "/api/v1/mailboxes/"
+	pathParts[0] = "/api/v1/inboxes/"
 	{
-		// Encode "mailboxId" parameter.
+		// Encode "inboxId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "mailboxId",
+			Param:   "inboxId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.MailboxId))
+			return e.EncodeValue(conv.UUIDToString(params.InboxId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -5647,7 +3851,7 @@ func (c *Client) sendResumeMailboxOutbound(ctx context.Context, params ResumeMai
 		var satisfied bitset
 		{
 			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ResumeMailboxOutboundOperation, r); {
+			switch err := c.securityBearerAuth(ctx, ResumeInboxOutboundOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -5690,7 +3894,7 @@ func (c *Client) sendResumeMailboxOutbound(ctx context.Context, params ResumeMai
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeResumeMailboxOutboundResponse(resp)
+	result, err := decodeResumeInboxOutboundResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -5700,21 +3904,17 @@ func (c *Client) sendResumeMailboxOutbound(ctx context.Context, params ResumeMai
 
 // SendMessage invokes send-message operation.
 //
-// Submits an outbound email from a project mailbox and bills the project's active mail subscription by
-// the number of accepted recipients (`to` + `cc` + `bcc`, at most 50).
+// Submits an outbound email from the specified inbox and bills the project's active mail subscription
+// by the number of accepted recipients (`to` + `cc` + `bcc`, at most 50).
 //
 //   - Validation, suppression, and rate limits: Messages rejected for invalid arguments (400),
 //     suppressed recipients (422 `MAIL_RECIPIENT_SUPPRESSED`, non-retryable), or rate / daily-quota
 //     limits (429 `MAIL_RATE_LIMITED` with `retry_delay`, retryable) are not billed.
-//   - Accepted sends and bounces: Once accepted (201 with `status: accepted`), delivery proceeds
-//     asynchronously and per-recipient outcomes appear in `deliveries`; subsequent hard bounces remain
-//     billed.
-//   - Sender derivation: `From` is derived strictly from the sending mailbox's allocated address. A
-//     service account token may omit `mailbox_id` to send from its own mailbox.
+//   - Sender derivation: `From` is derived strictly from the inbox's allocated address.
 //   - Plain-text derivation: If only `html` is provided, a plain-text alternative is automatically
 //     derived for multipart delivery.
 //
-// POST /api/v1/messages
+// POST /api/v1/inboxes/{inboxId}/messages
 func (c *Client) SendMessage(ctx context.Context, request *SendMessageRequestBody, params SendMessageParams) (*MessageResource, error) {
 	res, err := c.sendSendMessage(ctx, request, params)
 	return res, err
@@ -5733,7 +3933,7 @@ func (c *Client) sendSendMessage(ctx context.Context, request *SendMessageReques
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("send-message"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/messages"),
+		semconv.URLTemplateKey.String("/api/v1/inboxes/{inboxId}/messages"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -5766,8 +3966,27 @@ func (c *Client) sendSendMessage(ctx context.Context, request *SendMessageReques
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/messages"
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/inboxes/"
+	{
+		// Encode "inboxId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "inboxId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.InboxId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/messages"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -5852,18 +4071,18 @@ func (c *Client) sendSendMessage(ctx context.Context, request *SendMessageReques
 	return result, nil
 }
 
-// UpdateAccountMailbox invokes update-account-mailbox operation.
+// UpdateInbox invokes update-inbox operation.
 //
-// Updates forwarding and inbound spam filtering preferences for the caller's personal mailbox.
-// Unsupplied fields are left unchanged.
+// Updates display name, inbound delivery toggle, or optional email forwarding preferences for the
+// inbox. Unsupplied fields are left unchanged.
 //
-// PATCH /api/v1/account/mailbox
-func (c *Client) UpdateAccountMailbox(ctx context.Context, request *UpdateAccountMailboxRequestBody) (*AccountMailboxResource, error) {
-	res, err := c.sendUpdateAccountMailbox(ctx, request)
+// PATCH /api/v1/inboxes/{inboxId}
+func (c *Client) UpdateInbox(ctx context.Context, request *UpdateInboxRequestBody, params UpdateInboxParams) (*InboxResource, error) {
+	res, err := c.sendUpdateInbox(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendUpdateAccountMailbox(ctx context.Context, request *UpdateAccountMailboxRequestBody) (res *AccountMailboxResource, err error) {
+func (c *Client) sendUpdateInbox(ctx context.Context, request *UpdateInboxRequestBody, params UpdateInboxParams) (res *InboxResource, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {
@@ -5874,9 +4093,9 @@ func (c *Client) sendUpdateAccountMailbox(ctx context.Context, request *UpdateAc
 		return res, errors.Wrap(err, "validate")
 	}
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("update-account-mailbox"),
+		otelogen.OperationID("update-inbox"),
 		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.URLTemplateKey.String("/api/v1/account/mailbox"),
+		semconv.URLTemplateKey.String("/api/v1/inboxes/{inboxId}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -5892,123 +4111,7 @@ func (c *Client) sendUpdateAccountMailbox(ctx context.Context, request *UpdateAc
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, UpdateAccountMailboxOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/account/mailbox"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "PATCH", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeUpdateAccountMailboxRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:AccessTokenAuth"
-			switch err := c.securityAccessTokenAuth(ctx, UpdateAccountMailboxOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeUpdateAccountMailboxResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// UpdateAccountMessage invokes update-account-message operation.
-//
-// Update read or flagged state of a personal account message.
-//
-// PATCH /api/v1/account/messages/{messageId}
-func (c *Client) UpdateAccountMessage(ctx context.Context, request *UpdateMessageRequestBody, params UpdateAccountMessageParams) (*MessageResource, error) {
-	res, err := c.sendUpdateAccountMessage(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendUpdateAccountMessage(ctx context.Context, request *UpdateMessageRequestBody, params UpdateAccountMessageParams) (res *MessageResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("update-account-message"),
-		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.URLTemplateKey.String("/api/v1/account/messages/{messageId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, UpdateAccountMessageOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, UpdateInboxOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -6026,16 +4129,16 @@ func (c *Client) sendUpdateAccountMessage(ctx context.Context, request *UpdateMe
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [2]string
-	pathParts[0] = "/api/v1/account/messages/"
+	pathParts[0] = "/api/v1/inboxes/"
 	{
-		// Encode "messageId" parameter.
+		// Encode "inboxId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "messageId",
+			Param:   "inboxId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.MessageId))
+			return e.EncodeValue(conv.UUIDToString(params.InboxId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -6052,7 +4155,7 @@ func (c *Client) sendUpdateAccountMessage(ctx context.Context, request *UpdateMe
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
-	if err := encodeUpdateAccountMessageRequest(request, r); err != nil {
+	if err := encodeUpdateInboxRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
 	}
 
@@ -6060,14 +4163,14 @@ func (c *Client) sendUpdateAccountMessage(ctx context.Context, request *UpdateMe
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:AccessTokenAuth"
-			switch err := c.securityAccessTokenAuth(ctx, UpdateAccountMessageOperation, r); {
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, UpdateInboxOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
 			}
 		}
 
@@ -6104,7 +4207,7 @@ func (c *Client) sendUpdateAccountMessage(ctx context.Context, request *UpdateMe
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeUpdateAccountMessageResponse(resp)
+	result, err := decodeUpdateInboxResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -6114,9 +4217,9 @@ func (c *Client) sendUpdateAccountMessage(ctx context.Context, request *UpdateMe
 
 // UpdateMessage invokes update-message operation.
 //
-// Update read or flagged state of a project message.
+// Update read or flagged state of a message.
 //
-// PATCH /api/v1/messages/{messageId}
+// PATCH /api/v1/inboxes/{inboxId}/messages/{messageId}
 func (c *Client) UpdateMessage(ctx context.Context, request *UpdateMessageRequestBody, params UpdateMessageParams) (*MessageResource, error) {
 	res, err := c.sendUpdateMessage(ctx, request, params)
 	return res, err
@@ -6126,7 +4229,7 @@ func (c *Client) sendUpdateMessage(ctx context.Context, request *UpdateMessageRe
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("update-message"),
 		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.URLTemplateKey.String("/api/v1/messages/{messageId}"),
+		semconv.URLTemplateKey.String("/api/v1/inboxes/{inboxId}/messages/{messageId}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -6159,8 +4262,27 @@ func (c *Client) sendUpdateMessage(ctx context.Context, request *UpdateMessageRe
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/messages/"
+	var pathParts [4]string
+	pathParts[0] = "/api/v1/inboxes/"
+	{
+		// Encode "inboxId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "inboxId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.InboxId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/messages/"
 	{
 		// Encode "messageId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
@@ -6177,7 +4299,7 @@ func (c *Client) sendUpdateMessage(ctx context.Context, request *UpdateMessageRe
 		if err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
-		pathParts[1] = encoded
+		pathParts[3] = encoded
 	}
 	uri.AddPathParts(u, pathParts[:]...)
 
@@ -6246,150 +4368,15 @@ func (c *Client) sendUpdateMessage(ctx context.Context, request *UpdateMessageRe
 	return result, nil
 }
 
-// UploadAccountAttachment invokes upload-account-attachment operation.
-//
-// Uploads raw file bytes (`application/octet-stream`) for use in `reply-account-thread`. Unreferenced
-// attachments are removed automatically after 24 hours.
-//
-// POST /api/v1/account/attachments
-func (c *Client) UploadAccountAttachment(ctx context.Context, request UploadAccountAttachmentReq, params UploadAccountAttachmentParams) (*AttachmentResource, error) {
-	res, err := c.sendUploadAccountAttachment(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendUploadAccountAttachment(ctx context.Context, request UploadAccountAttachmentReq, params UploadAccountAttachmentParams) (res *AttachmentResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("upload-account-attachment"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/account/attachments"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, UploadAccountAttachmentOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/account/attachments"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "filename" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "filename",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.Filename))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeUploadAccountAttachmentRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:AccessTokenAuth"
-			switch err := c.securityAccessTokenAuth(ctx, UploadAccountAttachmentOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeUploadAccountAttachmentResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // UploadAttachment invokes upload-attachment operation.
 //
 // The body is the raw file bytes (`application/octet-stream`), one file per request. The content type
 // is determined by inspecting the bytes, not from request headers.
 //
-// Pass the returned `id` in `attachment_ids` when calling `send-message`. An unreferenced attachment
-// is removed automatically after 24 hours.
+// Pass the returned `id` in `attachment_ids` when calling `send-message` or `reply-message` on the
+// same inbox. An unreferenced attachment is removed automatically after 24 hours.
 //
-// POST /api/v1/attachments
+// POST /api/v1/inboxes/{inboxId}/attachments
 func (c *Client) UploadAttachment(ctx context.Context, request UploadAttachmentReq, params UploadAttachmentParams) (*AttachmentResource, error) {
 	res, err := c.sendUploadAttachment(ctx, request, params)
 	return res, err
@@ -6399,7 +4386,7 @@ func (c *Client) sendUploadAttachment(ctx context.Context, request UploadAttachm
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("upload-attachment"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/attachments"),
+		semconv.URLTemplateKey.String("/api/v1/inboxes/{inboxId}/attachments"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -6432,8 +4419,27 @@ func (c *Client) sendUploadAttachment(ctx context.Context, request UploadAttachm
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/attachments"
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/inboxes/"
+	{
+		// Encode "inboxId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "inboxId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.InboxId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/attachments"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeQueryParams"

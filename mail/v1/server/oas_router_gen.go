@@ -11,105 +11,67 @@ import (
 )
 
 var (
-	rn47AllowedHeaders = map[string]string{
+	rn5AllowedHeaders = map[string]string{
+		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
+	}
+	rn6AllowedHeaders = map[string]string{
+		"GET":  "Authorization",
+		"POST": "Authorization,Content-Type",
+	}
+	rn2AllowedHeaders = map[string]string{
+		"GET":   "Authorization",
+		"PATCH": "Authorization,Content-Type",
+	}
+	rn28AllowedHeaders = map[string]string{
+		"POST": "Authorization,Content-Type",
+	}
+	rn13AllowedHeaders = map[string]string{
+		"GET": "Authorization",
+	}
+	rn7AllowedHeaders = map[string]string{
+		"GET":  "Authorization",
+		"POST": "Authorization,Content-Type,Idempotency-Key",
+	}
+	rn9AllowedHeaders = map[string]string{
+		"DELETE": "Authorization",
+		"GET":    "Authorization",
+		"PATCH":  "Authorization,Content-Type",
+	}
+	rn16AllowedHeaders = map[string]string{
+		"GET": "Authorization",
+	}
+	rn14AllowedHeaders = map[string]string{
+		"GET": "Authorization",
+	}
+	rn25AllowedHeaders = map[string]string{
+		"POST": "Authorization,Content-Type,Idempotency-Key",
+	}
+	rn3AllowedHeaders = map[string]string{
+		"POST": "Authorization,Content-Type",
+	}
+	rn20AllowedHeaders = map[string]string{
+		"GET": "Authorization",
 	}
 	rn18AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn25AllowedHeaders = map[string]string{
-		"GET":   "Authorization",
-		"PATCH": "Authorization,Content-Type",
+	rn22AllowedHeaders = map[string]string{
+		"GET": "Authorization",
 	}
-	rn1AllowedHeaders = map[string]string{
+	rn24AllowedHeaders = map[string]string{
 		"POST": "Authorization",
 	}
-	rn9AllowedHeaders = map[string]string{
-		"GET": "Authorization",
-	}
-	rn11AllowedHeaders = map[string]string{
-		"DELETE": "Authorization",
-		"GET":    "Authorization",
-		"PATCH":  "Authorization,Content-Type",
-	}
 	rn27AllowedHeaders = map[string]string{
+		"POST": "Authorization",
+	}
+	rn21AllowedHeaders = map[string]string{
 		"GET": "Authorization",
-	}
-	rn19AllowedHeaders = map[string]string{
-		"GET": "Authorization",
-	}
-	rn5AllowedHeaders = map[string]string{
-		"POST": "Authorization,Content-Type",
-	}
-	rn38AllowedHeaders = map[string]string{
-		"GET": "Authorization",
-	}
-	rn29AllowedHeaders = map[string]string{
-		"GET": "Authorization",
-	}
-	rn37AllowedHeaders = map[string]string{
-		"GET": "Authorization",
-	}
-	rn43AllowedHeaders = map[string]string{
-		"POST": "Authorization,Content-Type,Idempotency-Key",
-	}
-	rn48AllowedHeaders = map[string]string{
-		"POST": "Authorization,Content-Type",
 	}
 	rn23AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn8AllowedHeaders = map[string]string{
-		"GET":  "Authorization",
-		"POST": "Authorization,Content-Type",
-	}
-	rn3AllowedHeaders = map[string]string{
-		"GET":  "Authorization",
-		"POST": "Authorization,Content-Type",
-	}
-	rn31AllowedHeaders = map[string]string{
-		"GET": "Authorization",
-	}
-	rn42AllowedHeaders = map[string]string{
-		"POST": "Authorization",
-	}
-	rn46AllowedHeaders = map[string]string{
-		"POST": "Authorization",
-	}
-	rn12AllowedHeaders = map[string]string{
-		"GET":  "Authorization",
-		"POST": "Authorization,Content-Type,Idempotency-Key",
-	}
-	rn14AllowedHeaders = map[string]string{
-		"DELETE": "Authorization",
-		"GET":    "Authorization",
-		"PATCH":  "Authorization,Content-Type",
-	}
-	rn33AllowedHeaders = map[string]string{
-		"GET": "Authorization",
-	}
-	rn24AllowedHeaders = map[string]string{
-		"GET": "Authorization",
-	}
-	rn44AllowedHeaders = map[string]string{
-		"POST": "Authorization,Content-Type,Idempotency-Key",
-	}
-	rn7AllowedHeaders = map[string]string{
-		"POST": "Authorization,Content-Type",
-	}
-	rn39AllowedHeaders = map[string]string{
-		"GET": "Authorization",
-	}
-	rn41AllowedHeaders = map[string]string{
-		"GET": "Authorization",
-	}
-	rn35AllowedHeaders = map[string]string{
-		"GET": "Authorization",
-	}
-	rn40AllowedHeaders = map[string]string{
-		"GET": "Authorization",
-	}
-	rn36AllowedHeaders = map[string]string{
+	rn19AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 )
@@ -144,7 +106,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.notFound(w, r)
 		return
 	}
-	args := [1]string{}
+	args := [2]string{}
 
 	// Static code generated router with unwrapped path search.
 	switch {
@@ -165,109 +127,101 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 			switch elem[0] {
-			case 'a': // Prefix: "a"
+			case 'e': // Prefix: "enablement"
 
-				if l := len("a"); len(elem) >= l && elem[0:l] == "a" {
+				if l := len("enablement"); len(elem) >= l && elem[0:l] == "enablement" {
 					elem = elem[l:]
 				} else {
 					break
 				}
 
 				if len(elem) == 0 {
+					// Leaf node.
+					switch r.Method {
+					case "GET":
+						s.handleGetEnablementRequest([0]string{}, elemIsEscaped, w, r)
+					case "POST":
+						s.handleCreateEnablementRequest([0]string{}, elemIsEscaped, w, r)
+					default:
+						s.notAllowed(w, r, notAllowedParams{
+							allowedMethods: "GET,POST",
+							allowedHeaders: rn5AllowedHeaders,
+							acceptPost:     "application/json",
+							acceptPatch:    "",
+						})
+					}
+
+					return
+				}
+
+			case 'i': // Prefix: "inboxes"
+
+				if l := len("inboxes"); len(elem) >= l && elem[0:l] == "inboxes" {
+					elem = elem[l:]
+				} else {
 					break
 				}
-				switch elem[0] {
-				case 'c': // Prefix: "ccount/"
 
-					if l := len("ccount/"); len(elem) >= l && elem[0:l] == "ccount/" {
+				if len(elem) == 0 {
+					switch r.Method {
+					case "GET":
+						s.handleListInboxesRequest([0]string{}, elemIsEscaped, w, r)
+					case "POST":
+						s.handleCreateInboxRequest([0]string{}, elemIsEscaped, w, r)
+					default:
+						s.notAllowed(w, r, notAllowedParams{
+							allowedMethods: "GET,POST",
+							allowedHeaders: rn6AllowedHeaders,
+							acceptPost:     "application/json",
+							acceptPatch:    "",
+						})
+					}
+
+					return
+				}
+				switch elem[0] {
+				case '/': // Prefix: "/"
+
+					if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 						elem = elem[l:]
 					} else {
 						break
 					}
 
+					// Param: "inboxId"
+					// Match until one of "/:"
+					idx := strings.IndexAny(elem, "/:")
+					if idx < 0 {
+						idx = len(elem)
+					}
+					args[0] = elem[:idx]
+					elem = elem[idx:]
+
 					if len(elem) == 0 {
-						break
+						switch r.Method {
+						case "GET":
+							s.handleGetInboxRequest([1]string{
+								args[0],
+							}, elemIsEscaped, w, r)
+						case "PATCH":
+							s.handleUpdateInboxRequest([1]string{
+								args[0],
+							}, elemIsEscaped, w, r)
+						default:
+							s.notAllowed(w, r, notAllowedParams{
+								allowedMethods: "GET,PATCH",
+								allowedHeaders: rn2AllowedHeaders,
+								acceptPost:     "",
+								acceptPatch:    "application/json",
+							})
+						}
+
+						return
 					}
 					switch elem[0] {
-					case 'a': // Prefix: "attachments"
+					case '/': // Prefix: "/"
 
-						if l := len("attachments"); len(elem) >= l && elem[0:l] == "attachments" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						if len(elem) == 0 {
-							switch r.Method {
-							case "POST":
-								s.handleUploadAccountAttachmentRequest([0]string{}, elemIsEscaped, w, r)
-							default:
-								s.notAllowed(w, r, notAllowedParams{
-									allowedMethods: "POST",
-									allowedHeaders: rn47AllowedHeaders,
-									acceptPost:     "application/octet-stream",
-									acceptPatch:    "",
-								})
-							}
-
-							return
-						}
-						switch elem[0] {
-						case '/': // Prefix: "/"
-
-							if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							// Param: "attachmentId"
-							// Match until "/"
-							idx := strings.IndexByte(elem, '/')
-							if idx < 0 {
-								idx = len(elem)
-							}
-							args[0] = elem[:idx]
-							elem = elem[idx:]
-
-							if len(elem) == 0 {
-								break
-							}
-							switch elem[0] {
-							case '/': // Prefix: "/content"
-
-								if l := len("/content"); len(elem) >= l && elem[0:l] == "/content" {
-									elem = elem[l:]
-								} else {
-									break
-								}
-
-								if len(elem) == 0 {
-									// Leaf node.
-									switch r.Method {
-									case "GET":
-										s.handleDownloadAccountAttachmentRequest([1]string{
-											args[0],
-										}, elemIsEscaped, w, r)
-									default:
-										s.notAllowed(w, r, notAllowedParams{
-											allowedMethods: "GET",
-											allowedHeaders: rn18AllowedHeaders,
-											acceptPost:     "",
-											acceptPatch:    "",
-										})
-									}
-
-									return
-								}
-
-							}
-
-						}
-
-					case 'm': // Prefix: "m"
-
-						if l := len("m"); len(elem) >= l && elem[0:l] == "m" {
+						if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 							elem = elem[l:]
 						} else {
 							break
@@ -277,9 +231,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							break
 						}
 						switch elem[0] {
-						case 'a': // Prefix: "ailbox"
+						case 'a': // Prefix: "attachments"
 
-							if l := len("ailbox"); len(elem) >= l && elem[0:l] == "ailbox" {
+							if l := len("attachments"); len(elem) >= l && elem[0:l] == "attachments" {
 								elem = elem[l:]
 							} else {
 								break
@@ -287,52 +241,78 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 							if len(elem) == 0 {
 								switch r.Method {
-								case "GET":
-									s.handleGetAccountMailboxRequest([0]string{}, elemIsEscaped, w, r)
-								case "PATCH":
-									s.handleUpdateAccountMailboxRequest([0]string{}, elemIsEscaped, w, r)
+								case "POST":
+									s.handleUploadAttachmentRequest([1]string{
+										args[0],
+									}, elemIsEscaped, w, r)
 								default:
 									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "GET,PATCH",
-										allowedHeaders: rn25AllowedHeaders,
-										acceptPost:     "",
-										acceptPatch:    "application/json",
+										allowedMethods: "POST",
+										allowedHeaders: rn28AllowedHeaders,
+										acceptPost:     "application/octet-stream",
+										acceptPatch:    "",
 									})
 								}
 
 								return
 							}
 							switch elem[0] {
-							case ':': // Prefix: ":activate"
+							case '/': // Prefix: "/"
 
-								if l := len(":activate"); len(elem) >= l && elem[0:l] == ":activate" {
+								if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 									elem = elem[l:]
 								} else {
 									break
 								}
 
+								// Param: "attachmentId"
+								// Match until "/"
+								idx := strings.IndexByte(elem, '/')
+								if idx < 0 {
+									idx = len(elem)
+								}
+								args[1] = elem[:idx]
+								elem = elem[idx:]
+
 								if len(elem) == 0 {
-									// Leaf node.
-									switch r.Method {
-									case "POST":
-										s.handleActivateAccountMailboxRequest([0]string{}, elemIsEscaped, w, r)
-									default:
-										s.notAllowed(w, r, notAllowedParams{
-											allowedMethods: "POST",
-											allowedHeaders: rn1AllowedHeaders,
-											acceptPost:     "",
-											acceptPatch:    "",
-										})
+									break
+								}
+								switch elem[0] {
+								case '/': // Prefix: "/content"
+
+									if l := len("/content"); len(elem) >= l && elem[0:l] == "/content" {
+										elem = elem[l:]
+									} else {
+										break
 									}
 
-									return
+									if len(elem) == 0 {
+										// Leaf node.
+										switch r.Method {
+										case "GET":
+											s.handleDownloadAttachmentRequest([2]string{
+												args[0],
+												args[1],
+											}, elemIsEscaped, w, r)
+										default:
+											s.notAllowed(w, r, notAllowedParams{
+												allowedMethods: "GET",
+												allowedHeaders: rn13AllowedHeaders,
+												acceptPost:     "",
+												acceptPatch:    "",
+											})
+										}
+
+										return
+									}
+
 								}
 
 							}
 
-						case 'e': // Prefix: "essages"
+						case 'm': // Prefix: "messages"
 
-							if l := len("essages"); len(elem) >= l && elem[0:l] == "essages" {
+							if l := len("messages"); len(elem) >= l && elem[0:l] == "messages" {
 								elem = elem[l:]
 							} else {
 								break
@@ -341,12 +321,18 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							if len(elem) == 0 {
 								switch r.Method {
 								case "GET":
-									s.handleListAccountMessagesRequest([0]string{}, elemIsEscaped, w, r)
+									s.handleListMessagesRequest([1]string{
+										args[0],
+									}, elemIsEscaped, w, r)
+								case "POST":
+									s.handleSendMessageRequest([1]string{
+										args[0],
+									}, elemIsEscaped, w, r)
 								default:
 									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "GET",
-										allowedHeaders: rn9AllowedHeaders,
-										acceptPost:     "",
+										allowedMethods: "GET,POST",
+										allowedHeaders: rn7AllowedHeaders,
+										acceptPost:     "application/json",
 										acceptPatch:    "",
 									})
 								}
@@ -363,32 +349,35 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								}
 
 								// Param: "messageId"
-								// Match until "/"
-								idx := strings.IndexByte(elem, '/')
+								// Match until one of "/:"
+								idx := strings.IndexAny(elem, "/:")
 								if idx < 0 {
 									idx = len(elem)
 								}
-								args[0] = elem[:idx]
+								args[1] = elem[:idx]
 								elem = elem[idx:]
 
 								if len(elem) == 0 {
 									switch r.Method {
 									case "DELETE":
-										s.handleDeleteAccountMessageRequest([1]string{
+										s.handleDeleteMessageRequest([2]string{
 											args[0],
+											args[1],
 										}, elemIsEscaped, w, r)
 									case "GET":
-										s.handleGetAccountMessageRequest([1]string{
+										s.handleGetMessageRequest([2]string{
 											args[0],
+											args[1],
 										}, elemIsEscaped, w, r)
 									case "PATCH":
-										s.handleUpdateAccountMessageRequest([1]string{
+										s.handleUpdateMessageRequest([2]string{
 											args[0],
+											args[1],
 										}, elemIsEscaped, w, r)
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "DELETE,GET,PATCH",
-											allowedHeaders: rn11AllowedHeaders,
+											allowedHeaders: rn9AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "application/json",
 										})
@@ -421,13 +410,14 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 											// Leaf node.
 											switch r.Method {
 											case "GET":
-												s.handleGetAccountMessageHeadersRequest([1]string{
+												s.handleGetMessageHeadersRequest([2]string{
 													args[0],
+													args[1],
 												}, elemIsEscaped, w, r)
 											default:
 												s.notAllowed(w, r, notAllowedParams{
 													allowedMethods: "GET",
-													allowedHeaders: rn27AllowedHeaders,
+													allowedHeaders: rn16AllowedHeaders,
 													acceptPost:     "",
 													acceptPatch:    "",
 												})
@@ -448,13 +438,14 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 											// Leaf node.
 											switch r.Method {
 											case "GET":
-												s.handleDownloadAccountMessageRawRequest([1]string{
+												s.handleDownloadMessageRawRequest([2]string{
 													args[0],
+													args[1],
 												}, elemIsEscaped, w, r)
 											default:
 												s.notAllowed(w, r, notAllowedParams{
 													allowedMethods: "GET",
-													allowedHeaders: rn19AllowedHeaders,
+													allowedHeaders: rn14AllowedHeaders,
 													acceptPost:     "",
 													acceptPatch:    "",
 												})
@@ -463,6 +454,34 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 											return
 										}
 
+									}
+
+								case ':': // Prefix: ":reply"
+
+									if l := len(":reply"); len(elem) >= l && elem[0:l] == ":reply" {
+										elem = elem[l:]
+									} else {
+										break
+									}
+
+									if len(elem) == 0 {
+										// Leaf node.
+										switch r.Method {
+										case "POST":
+											s.handleReplyMessageRequest([2]string{
+												args[0],
+												args[1],
+											}, elemIsEscaped, w, r)
+										default:
+											s.notAllowed(w, r, notAllowedParams{
+												allowedMethods: "POST",
+												allowedHeaders: rn25AllowedHeaders,
+												acceptPost:     "application/json",
+												acceptPatch:    "",
+											})
+										}
+
+										return
 									}
 
 								}
@@ -479,11 +498,13 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									// Leaf node.
 									switch r.Method {
 									case "POST":
-										s.handleBatchUpdateAccountMessagesRequest([0]string{}, elemIsEscaped, w, r)
+										s.handleBatchUpdateMessagesRequest([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "POST",
-											allowedHeaders: rn5AllowedHeaders,
+											allowedHeaders: rn3AllowedHeaders,
 											acceptPost:     "application/json",
 											acceptPatch:    "",
 										})
@@ -494,59 +515,24 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 							}
 
-						}
+						case 't': // Prefix: "threads"
 
-					case 't': // Prefix: "threads"
-
-						if l := len("threads"); len(elem) >= l && elem[0:l] == "threads" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						if len(elem) == 0 {
-							switch r.Method {
-							case "GET":
-								s.handleListAccountThreadsRequest([0]string{}, elemIsEscaped, w, r)
-							default:
-								s.notAllowed(w, r, notAllowedParams{
-									allowedMethods: "GET",
-									allowedHeaders: rn38AllowedHeaders,
-									acceptPost:     "",
-									acceptPatch:    "",
-								})
-							}
-
-							return
-						}
-						switch elem[0] {
-						case '/': // Prefix: "/"
-
-							if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+							if l := len("threads"); len(elem) >= l && elem[0:l] == "threads" {
 								elem = elem[l:]
 							} else {
 								break
 							}
 
-							// Param: "threadId"
-							// Match until one of "/:"
-							idx := strings.IndexAny(elem, "/:")
-							if idx < 0 {
-								idx = len(elem)
-							}
-							args[0] = elem[:idx]
-							elem = elem[idx:]
-
 							if len(elem) == 0 {
 								switch r.Method {
 								case "GET":
-									s.handleGetAccountThreadRequest([1]string{
+									s.handleListInboxThreadsRequest([1]string{
 										args[0],
 									}, elemIsEscaped, w, r)
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "GET",
-										allowedHeaders: rn29AllowedHeaders,
+										allowedHeaders: rn20AllowedHeaders,
 										acceptPost:     "",
 										acceptPatch:    "",
 									})
@@ -555,25 +541,34 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								return
 							}
 							switch elem[0] {
-							case '/': // Prefix: "/messages"
+							case '/': // Prefix: "/"
 
-								if l := len("/messages"); len(elem) >= l && elem[0:l] == "/messages" {
+								if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 									elem = elem[l:]
 								} else {
 									break
 								}
 
+								// Param: "threadId"
+								// Match until "/"
+								idx := strings.IndexByte(elem, '/')
+								if idx < 0 {
+									idx = len(elem)
+								}
+								args[1] = elem[:idx]
+								elem = elem[idx:]
+
 								if len(elem) == 0 {
-									// Leaf node.
 									switch r.Method {
 									case "GET":
-										s.handleListAccountThreadMessagesRequest([1]string{
+										s.handleGetThreadRequest([2]string{
 											args[0],
+											args[1],
 										}, elemIsEscaped, w, r)
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "GET",
-											allowedHeaders: rn37AllowedHeaders,
+											allowedHeaders: rn18AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
 										})
@@ -581,430 +576,56 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 									return
 								}
+								switch elem[0] {
+								case '/': // Prefix: "/messages"
 
-							case ':': // Prefix: ":reply"
-
-								if l := len(":reply"); len(elem) >= l && elem[0:l] == ":reply" {
-									elem = elem[l:]
-								} else {
-									break
-								}
-
-								if len(elem) == 0 {
-									// Leaf node.
-									switch r.Method {
-									case "POST":
-										s.handleReplyAccountThreadRequest([1]string{
-											args[0],
-										}, elemIsEscaped, w, r)
-									default:
-										s.notAllowed(w, r, notAllowedParams{
-											allowedMethods: "POST",
-											allowedHeaders: rn43AllowedHeaders,
-											acceptPost:     "application/json",
-											acceptPatch:    "",
-										})
+									if l := len("/messages"); len(elem) >= l && elem[0:l] == "/messages" {
+										elem = elem[l:]
+									} else {
+										break
 									}
 
-									return
+									if len(elem) == 0 {
+										// Leaf node.
+										switch r.Method {
+										case "GET":
+											s.handleListThreadMessagesRequest([2]string{
+												args[0],
+												args[1],
+											}, elemIsEscaped, w, r)
+										default:
+											s.notAllowed(w, r, notAllowedParams{
+												allowedMethods: "GET",
+												allowedHeaders: rn22AllowedHeaders,
+												acceptPost:     "",
+												acceptPatch:    "",
+											})
+										}
+
+										return
+									}
+
 								}
 
 							}
 
 						}
 
-					}
+					case ':': // Prefix: ":"
 
-				case 't': // Prefix: "ttachments"
-
-					if l := len("ttachments"); len(elem) >= l && elem[0:l] == "ttachments" {
-						elem = elem[l:]
-					} else {
-						break
-					}
-
-					if len(elem) == 0 {
-						switch r.Method {
-						case "POST":
-							s.handleUploadAttachmentRequest([0]string{}, elemIsEscaped, w, r)
-						default:
-							s.notAllowed(w, r, notAllowedParams{
-								allowedMethods: "POST",
-								allowedHeaders: rn48AllowedHeaders,
-								acceptPost:     "application/octet-stream",
-								acceptPatch:    "",
-							})
-						}
-
-						return
-					}
-					switch elem[0] {
-					case '/': // Prefix: "/"
-
-						if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+						if l := len(":"); len(elem) >= l && elem[0:l] == ":" {
 							elem = elem[l:]
 						} else {
 							break
 						}
 
-						// Param: "attachmentId"
-						// Match until "/"
-						idx := strings.IndexByte(elem, '/')
-						if idx < 0 {
-							idx = len(elem)
-						}
-						args[0] = elem[:idx]
-						elem = elem[idx:]
-
 						if len(elem) == 0 {
 							break
 						}
 						switch elem[0] {
-						case '/': // Prefix: "/content"
+						case 'p': // Prefix: "pauseOutbound"
 
-							if l := len("/content"); len(elem) >= l && elem[0:l] == "/content" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							if len(elem) == 0 {
-								// Leaf node.
-								switch r.Method {
-								case "GET":
-									s.handleDownloadAttachmentRequest([1]string{
-										args[0],
-									}, elemIsEscaped, w, r)
-								default:
-									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "GET",
-										allowedHeaders: rn23AllowedHeaders,
-										acceptPost:     "",
-										acceptPatch:    "",
-									})
-								}
-
-								return
-							}
-
-						}
-
-					}
-
-				}
-
-			case 'e': // Prefix: "enablement"
-
-				if l := len("enablement"); len(elem) >= l && elem[0:l] == "enablement" {
-					elem = elem[l:]
-				} else {
-					break
-				}
-
-				if len(elem) == 0 {
-					// Leaf node.
-					switch r.Method {
-					case "GET":
-						s.handleGetEnablementRequest([0]string{}, elemIsEscaped, w, r)
-					case "POST":
-						s.handleCreateEnablementRequest([0]string{}, elemIsEscaped, w, r)
-					default:
-						s.notAllowed(w, r, notAllowedParams{
-							allowedMethods: "GET,POST",
-							allowedHeaders: rn8AllowedHeaders,
-							acceptPost:     "application/json",
-							acceptPatch:    "",
-						})
-					}
-
-					return
-				}
-
-			case 'm': // Prefix: "m"
-
-				if l := len("m"); len(elem) >= l && elem[0:l] == "m" {
-					elem = elem[l:]
-				} else {
-					break
-				}
-
-				if len(elem) == 0 {
-					break
-				}
-				switch elem[0] {
-				case 'a': // Prefix: "ailboxes"
-
-					if l := len("ailboxes"); len(elem) >= l && elem[0:l] == "ailboxes" {
-						elem = elem[l:]
-					} else {
-						break
-					}
-
-					if len(elem) == 0 {
-						switch r.Method {
-						case "GET":
-							s.handleListMailboxesRequest([0]string{}, elemIsEscaped, w, r)
-						case "POST":
-							s.handleAllocateMailboxRequest([0]string{}, elemIsEscaped, w, r)
-						default:
-							s.notAllowed(w, r, notAllowedParams{
-								allowedMethods: "GET,POST",
-								allowedHeaders: rn3AllowedHeaders,
-								acceptPost:     "application/json",
-								acceptPatch:    "",
-							})
-						}
-
-						return
-					}
-					switch elem[0] {
-					case '/': // Prefix: "/"
-
-						if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						// Param: "mailboxId"
-						// Match until ":"
-						idx := strings.IndexByte(elem, ':')
-						if idx < 0 {
-							idx = len(elem)
-						}
-						args[0] = elem[:idx]
-						elem = elem[idx:]
-
-						if len(elem) == 0 {
-							switch r.Method {
-							case "GET":
-								s.handleGetMailboxRequest([1]string{
-									args[0],
-								}, elemIsEscaped, w, r)
-							default:
-								s.notAllowed(w, r, notAllowedParams{
-									allowedMethods: "GET",
-									allowedHeaders: rn31AllowedHeaders,
-									acceptPost:     "",
-									acceptPatch:    "",
-								})
-							}
-
-							return
-						}
-						switch elem[0] {
-						case ':': // Prefix: ":"
-
-							if l := len(":"); len(elem) >= l && elem[0:l] == ":" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							if len(elem) == 0 {
-								break
-							}
-							switch elem[0] {
-							case 'p': // Prefix: "pauseOutbound"
-
-								if l := len("pauseOutbound"); len(elem) >= l && elem[0:l] == "pauseOutbound" {
-									elem = elem[l:]
-								} else {
-									break
-								}
-
-								if len(elem) == 0 {
-									// Leaf node.
-									switch r.Method {
-									case "POST":
-										s.handlePauseMailboxOutboundRequest([1]string{
-											args[0],
-										}, elemIsEscaped, w, r)
-									default:
-										s.notAllowed(w, r, notAllowedParams{
-											allowedMethods: "POST",
-											allowedHeaders: rn42AllowedHeaders,
-											acceptPost:     "",
-											acceptPatch:    "",
-										})
-									}
-
-									return
-								}
-
-							case 'r': // Prefix: "resumeOutbound"
-
-								if l := len("resumeOutbound"); len(elem) >= l && elem[0:l] == "resumeOutbound" {
-									elem = elem[l:]
-								} else {
-									break
-								}
-
-								if len(elem) == 0 {
-									// Leaf node.
-									switch r.Method {
-									case "POST":
-										s.handleResumeMailboxOutboundRequest([1]string{
-											args[0],
-										}, elemIsEscaped, w, r)
-									default:
-										s.notAllowed(w, r, notAllowedParams{
-											allowedMethods: "POST",
-											allowedHeaders: rn46AllowedHeaders,
-											acceptPost:     "",
-											acceptPatch:    "",
-										})
-									}
-
-									return
-								}
-
-							}
-
-						}
-
-					}
-
-				case 'e': // Prefix: "essages"
-
-					if l := len("essages"); len(elem) >= l && elem[0:l] == "essages" {
-						elem = elem[l:]
-					} else {
-						break
-					}
-
-					if len(elem) == 0 {
-						switch r.Method {
-						case "GET":
-							s.handleListMessagesRequest([0]string{}, elemIsEscaped, w, r)
-						case "POST":
-							s.handleSendMessageRequest([0]string{}, elemIsEscaped, w, r)
-						default:
-							s.notAllowed(w, r, notAllowedParams{
-								allowedMethods: "GET,POST",
-								allowedHeaders: rn12AllowedHeaders,
-								acceptPost:     "application/json",
-								acceptPatch:    "",
-							})
-						}
-
-						return
-					}
-					switch elem[0] {
-					case '/': // Prefix: "/"
-
-						if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						// Param: "messageId"
-						// Match until one of "/:"
-						idx := strings.IndexAny(elem, "/:")
-						if idx < 0 {
-							idx = len(elem)
-						}
-						args[0] = elem[:idx]
-						elem = elem[idx:]
-
-						if len(elem) == 0 {
-							switch r.Method {
-							case "DELETE":
-								s.handleDeleteMessageRequest([1]string{
-									args[0],
-								}, elemIsEscaped, w, r)
-							case "GET":
-								s.handleGetMessageRequest([1]string{
-									args[0],
-								}, elemIsEscaped, w, r)
-							case "PATCH":
-								s.handleUpdateMessageRequest([1]string{
-									args[0],
-								}, elemIsEscaped, w, r)
-							default:
-								s.notAllowed(w, r, notAllowedParams{
-									allowedMethods: "DELETE,GET,PATCH",
-									allowedHeaders: rn14AllowedHeaders,
-									acceptPost:     "",
-									acceptPatch:    "application/json",
-								})
-							}
-
-							return
-						}
-						switch elem[0] {
-						case '/': // Prefix: "/"
-
-							if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							if len(elem) == 0 {
-								break
-							}
-							switch elem[0] {
-							case 'h': // Prefix: "headers"
-
-								if l := len("headers"); len(elem) >= l && elem[0:l] == "headers" {
-									elem = elem[l:]
-								} else {
-									break
-								}
-
-								if len(elem) == 0 {
-									// Leaf node.
-									switch r.Method {
-									case "GET":
-										s.handleGetMessageHeadersRequest([1]string{
-											args[0],
-										}, elemIsEscaped, w, r)
-									default:
-										s.notAllowed(w, r, notAllowedParams{
-											allowedMethods: "GET",
-											allowedHeaders: rn33AllowedHeaders,
-											acceptPost:     "",
-											acceptPatch:    "",
-										})
-									}
-
-									return
-								}
-
-							case 'r': // Prefix: "raw"
-
-								if l := len("raw"); len(elem) >= l && elem[0:l] == "raw" {
-									elem = elem[l:]
-								} else {
-									break
-								}
-
-								if len(elem) == 0 {
-									// Leaf node.
-									switch r.Method {
-									case "GET":
-										s.handleDownloadMessageRawRequest([1]string{
-											args[0],
-										}, elemIsEscaped, w, r)
-									default:
-										s.notAllowed(w, r, notAllowedParams{
-											allowedMethods: "GET",
-											allowedHeaders: rn24AllowedHeaders,
-											acceptPost:     "",
-											acceptPatch:    "",
-										})
-									}
-
-									return
-								}
-
-							}
-
-						case ':': // Prefix: ":reply"
-
-							if l := len(":reply"); len(elem) >= l && elem[0:l] == ":reply" {
+							if l := len("pauseOutbound"); len(elem) >= l && elem[0:l] == "pauseOutbound" {
 								elem = elem[l:]
 							} else {
 								break
@@ -1014,14 +635,14 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								// Leaf node.
 								switch r.Method {
 								case "POST":
-									s.handleReplyMessageRequest([1]string{
+									s.handlePauseInboxOutboundRequest([1]string{
 										args[0],
 									}, elemIsEscaped, w, r)
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "POST",
-										allowedHeaders: rn44AllowedHeaders,
-										acceptPost:     "application/json",
+										allowedHeaders: rn24AllowedHeaders,
+										acceptPost:     "",
 										acceptPatch:    "",
 									})
 								}
@@ -1029,31 +650,33 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								return
 							}
 
-						}
+						case 'r': // Prefix: "resumeOutbound"
 
-					case ':': // Prefix: ":batchUpdate"
-
-						if l := len(":batchUpdate"); len(elem) >= l && elem[0:l] == ":batchUpdate" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						if len(elem) == 0 {
-							// Leaf node.
-							switch r.Method {
-							case "POST":
-								s.handleBatchUpdateMessagesRequest([0]string{}, elemIsEscaped, w, r)
-							default:
-								s.notAllowed(w, r, notAllowedParams{
-									allowedMethods: "POST",
-									allowedHeaders: rn7AllowedHeaders,
-									acceptPost:     "application/json",
-									acceptPatch:    "",
-								})
+							if l := len("resumeOutbound"); len(elem) >= l && elem[0:l] == "resumeOutbound" {
+								elem = elem[l:]
+							} else {
+								break
 							}
 
-							return
+							if len(elem) == 0 {
+								// Leaf node.
+								switch r.Method {
+								case "POST":
+									s.handleResumeInboxOutboundRequest([1]string{
+										args[0],
+									}, elemIsEscaped, w, r)
+								default:
+									s.notAllowed(w, r, notAllowedParams{
+										allowedMethods: "POST",
+										allowedHeaders: rn27AllowedHeaders,
+										acceptPost:     "",
+										acceptPatch:    "",
+									})
+								}
+
+								return
+							}
+
 						}
 
 					}
@@ -1076,7 +699,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					default:
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "GET",
-							allowedHeaders: rn39AllowedHeaders,
+							allowedHeaders: rn21AllowedHeaders,
 							acceptPost:     "",
 							acceptPatch:    "",
 						})
@@ -1094,85 +717,20 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				}
 
 				if len(elem) == 0 {
+					// Leaf node.
 					switch r.Method {
 					case "GET":
 						s.handleListThreadsRequest([0]string{}, elemIsEscaped, w, r)
 					default:
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "GET",
-							allowedHeaders: rn41AllowedHeaders,
+							allowedHeaders: rn23AllowedHeaders,
 							acceptPost:     "",
 							acceptPatch:    "",
 						})
 					}
 
 					return
-				}
-				switch elem[0] {
-				case '/': // Prefix: "/"
-
-					if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
-						elem = elem[l:]
-					} else {
-						break
-					}
-
-					// Param: "threadId"
-					// Match until "/"
-					idx := strings.IndexByte(elem, '/')
-					if idx < 0 {
-						idx = len(elem)
-					}
-					args[0] = elem[:idx]
-					elem = elem[idx:]
-
-					if len(elem) == 0 {
-						switch r.Method {
-						case "GET":
-							s.handleGetThreadRequest([1]string{
-								args[0],
-							}, elemIsEscaped, w, r)
-						default:
-							s.notAllowed(w, r, notAllowedParams{
-								allowedMethods: "GET",
-								allowedHeaders: rn35AllowedHeaders,
-								acceptPost:     "",
-								acceptPatch:    "",
-							})
-						}
-
-						return
-					}
-					switch elem[0] {
-					case '/': // Prefix: "/messages"
-
-						if l := len("/messages"); len(elem) >= l && elem[0:l] == "/messages" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						if len(elem) == 0 {
-							// Leaf node.
-							switch r.Method {
-							case "GET":
-								s.handleListThreadMessagesRequest([1]string{
-									args[0],
-								}, elemIsEscaped, w, r)
-							default:
-								s.notAllowed(w, r, notAllowedParams{
-									allowedMethods: "GET",
-									allowedHeaders: rn40AllowedHeaders,
-									acceptPost:     "",
-									acceptPatch:    "",
-								})
-							}
-
-							return
-						}
-
-					}
-
 				}
 
 			case 'u': // Prefix: "usage"
@@ -1191,7 +749,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					default:
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "GET",
-							allowedHeaders: rn36AllowedHeaders,
+							allowedHeaders: rn19AllowedHeaders,
 							acceptPost:     "",
 							acceptPatch:    "",
 						})
@@ -1215,7 +773,7 @@ type Route struct {
 	operationGroup string
 	pathPattern    string
 	count          int
-	args           [1]string
+	args           [2]string
 }
 
 // Name returns ogen operation name.
@@ -1300,535 +858,6 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 				break
 			}
 			switch elem[0] {
-			case 'a': // Prefix: "a"
-
-				if l := len("a"); len(elem) >= l && elem[0:l] == "a" {
-					elem = elem[l:]
-				} else {
-					break
-				}
-
-				if len(elem) == 0 {
-					break
-				}
-				switch elem[0] {
-				case 'c': // Prefix: "ccount/"
-
-					if l := len("ccount/"); len(elem) >= l && elem[0:l] == "ccount/" {
-						elem = elem[l:]
-					} else {
-						break
-					}
-
-					if len(elem) == 0 {
-						break
-					}
-					switch elem[0] {
-					case 'a': // Prefix: "attachments"
-
-						if l := len("attachments"); len(elem) >= l && elem[0:l] == "attachments" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						if len(elem) == 0 {
-							switch method {
-							case "POST":
-								r.name = UploadAccountAttachmentOperation
-								r.summary = "Upload a personal account reply attachment"
-								r.operationID = "upload-account-attachment"
-								r.operationGroup = ""
-								r.pathPattern = "/api/v1/account/attachments"
-								r.args = args
-								r.count = 0
-								return r, true
-							default:
-								return
-							}
-						}
-						switch elem[0] {
-						case '/': // Prefix: "/"
-
-							if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							// Param: "attachmentId"
-							// Match until "/"
-							idx := strings.IndexByte(elem, '/')
-							if idx < 0 {
-								idx = len(elem)
-							}
-							args[0] = elem[:idx]
-							elem = elem[idx:]
-
-							if len(elem) == 0 {
-								break
-							}
-							switch elem[0] {
-							case '/': // Prefix: "/content"
-
-								if l := len("/content"); len(elem) >= l && elem[0:l] == "/content" {
-									elem = elem[l:]
-								} else {
-									break
-								}
-
-								if len(elem) == 0 {
-									// Leaf node.
-									switch method {
-									case "GET":
-										r.name = DownloadAccountAttachmentOperation
-										r.summary = "Download a personal account attachment"
-										r.operationID = "download-account-attachment"
-										r.operationGroup = ""
-										r.pathPattern = "/api/v1/account/attachments/{attachmentId}/content"
-										r.args = args
-										r.count = 1
-										return r, true
-									default:
-										return
-									}
-								}
-
-							}
-
-						}
-
-					case 'm': // Prefix: "m"
-
-						if l := len("m"); len(elem) >= l && elem[0:l] == "m" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						if len(elem) == 0 {
-							break
-						}
-						switch elem[0] {
-						case 'a': // Prefix: "ailbox"
-
-							if l := len("ailbox"); len(elem) >= l && elem[0:l] == "ailbox" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							if len(elem) == 0 {
-								switch method {
-								case "GET":
-									r.name = GetAccountMailboxOperation
-									r.summary = "Get personal account mailbox"
-									r.operationID = "get-account-mailbox"
-									r.operationGroup = ""
-									r.pathPattern = "/api/v1/account/mailbox"
-									r.args = args
-									r.count = 0
-									return r, true
-								case "PATCH":
-									r.name = UpdateAccountMailboxOperation
-									r.summary = "Update personal account mailbox preferences"
-									r.operationID = "update-account-mailbox"
-									r.operationGroup = ""
-									r.pathPattern = "/api/v1/account/mailbox"
-									r.args = args
-									r.count = 0
-									return r, true
-								default:
-									return
-								}
-							}
-							switch elem[0] {
-							case ':': // Prefix: ":activate"
-
-								if l := len(":activate"); len(elem) >= l && elem[0:l] == ":activate" {
-									elem = elem[l:]
-								} else {
-									break
-								}
-
-								if len(elem) == 0 {
-									// Leaf node.
-									switch method {
-									case "POST":
-										r.name = ActivateAccountMailboxOperation
-										r.summary = "Activate personal account mailbox"
-										r.operationID = "activate-account-mailbox"
-										r.operationGroup = ""
-										r.pathPattern = "/api/v1/account/mailbox:activate"
-										r.args = args
-										r.count = 0
-										return r, true
-									default:
-										return
-									}
-								}
-
-							}
-
-						case 'e': // Prefix: "essages"
-
-							if l := len("essages"); len(elem) >= l && elem[0:l] == "essages" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							if len(elem) == 0 {
-								switch method {
-								case "GET":
-									r.name = ListAccountMessagesOperation
-									r.summary = "List and search personal account messages"
-									r.operationID = "list-account-messages"
-									r.operationGroup = ""
-									r.pathPattern = "/api/v1/account/messages"
-									r.args = args
-									r.count = 0
-									return r, true
-								default:
-									return
-								}
-							}
-							switch elem[0] {
-							case '/': // Prefix: "/"
-
-								if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
-									elem = elem[l:]
-								} else {
-									break
-								}
-
-								// Param: "messageId"
-								// Match until "/"
-								idx := strings.IndexByte(elem, '/')
-								if idx < 0 {
-									idx = len(elem)
-								}
-								args[0] = elem[:idx]
-								elem = elem[idx:]
-
-								if len(elem) == 0 {
-									switch method {
-									case "DELETE":
-										r.name = DeleteAccountMessageOperation
-										r.summary = "Delete a personal account message"
-										r.operationID = "delete-account-message"
-										r.operationGroup = ""
-										r.pathPattern = "/api/v1/account/messages/{messageId}"
-										r.args = args
-										r.count = 1
-										return r, true
-									case "GET":
-										r.name = GetAccountMessageOperation
-										r.summary = "Get a personal account message"
-										r.operationID = "get-account-message"
-										r.operationGroup = ""
-										r.pathPattern = "/api/v1/account/messages/{messageId}"
-										r.args = args
-										r.count = 1
-										return r, true
-									case "PATCH":
-										r.name = UpdateAccountMessageOperation
-										r.summary = "Update read or flagged state of a personal account message"
-										r.operationID = "update-account-message"
-										r.operationGroup = ""
-										r.pathPattern = "/api/v1/account/messages/{messageId}"
-										r.args = args
-										r.count = 1
-										return r, true
-									default:
-										return
-									}
-								}
-								switch elem[0] {
-								case '/': // Prefix: "/"
-
-									if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
-										elem = elem[l:]
-									} else {
-										break
-									}
-
-									if len(elem) == 0 {
-										break
-									}
-									switch elem[0] {
-									case 'h': // Prefix: "headers"
-
-										if l := len("headers"); len(elem) >= l && elem[0:l] == "headers" {
-											elem = elem[l:]
-										} else {
-											break
-										}
-
-										if len(elem) == 0 {
-											// Leaf node.
-											switch method {
-											case "GET":
-												r.name = GetAccountMessageHeadersOperation
-												r.summary = "Get raw RFC 5322 headers of a personal account message"
-												r.operationID = "get-account-message-headers"
-												r.operationGroup = ""
-												r.pathPattern = "/api/v1/account/messages/{messageId}/headers"
-												r.args = args
-												r.count = 1
-												return r, true
-											default:
-												return
-											}
-										}
-
-									case 'r': // Prefix: "raw"
-
-										if l := len("raw"); len(elem) >= l && elem[0:l] == "raw" {
-											elem = elem[l:]
-										} else {
-											break
-										}
-
-										if len(elem) == 0 {
-											// Leaf node.
-											switch method {
-											case "GET":
-												r.name = DownloadAccountMessageRawOperation
-												r.summary = "Download raw RFC 5322 `.eml` source of a personal account message"
-												r.operationID = "download-account-message-raw"
-												r.operationGroup = ""
-												r.pathPattern = "/api/v1/account/messages/{messageId}/raw"
-												r.args = args
-												r.count = 1
-												return r, true
-											default:
-												return
-											}
-										}
-
-									}
-
-								}
-
-							case ':': // Prefix: ":batchUpdate"
-
-								if l := len(":batchUpdate"); len(elem) >= l && elem[0:l] == ":batchUpdate" {
-									elem = elem[l:]
-								} else {
-									break
-								}
-
-								if len(elem) == 0 {
-									// Leaf node.
-									switch method {
-									case "POST":
-										r.name = BatchUpdateAccountMessagesOperation
-										r.summary = "Batch update read or flagged state on personal account messages"
-										r.operationID = "batch-update-account-messages"
-										r.operationGroup = ""
-										r.pathPattern = "/api/v1/account/messages:batchUpdate"
-										r.args = args
-										r.count = 0
-										return r, true
-									default:
-										return
-									}
-								}
-
-							}
-
-						}
-
-					case 't': // Prefix: "threads"
-
-						if l := len("threads"); len(elem) >= l && elem[0:l] == "threads" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						if len(elem) == 0 {
-							switch method {
-							case "GET":
-								r.name = ListAccountThreadsOperation
-								r.summary = "List personal account email threads"
-								r.operationID = "list-account-threads"
-								r.operationGroup = ""
-								r.pathPattern = "/api/v1/account/threads"
-								r.args = args
-								r.count = 0
-								return r, true
-							default:
-								return
-							}
-						}
-						switch elem[0] {
-						case '/': // Prefix: "/"
-
-							if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							// Param: "threadId"
-							// Match until one of "/:"
-							idx := strings.IndexAny(elem, "/:")
-							if idx < 0 {
-								idx = len(elem)
-							}
-							args[0] = elem[:idx]
-							elem = elem[idx:]
-
-							if len(elem) == 0 {
-								switch method {
-								case "GET":
-									r.name = GetAccountThreadOperation
-									r.summary = "Get a personal account email thread"
-									r.operationID = "get-account-thread"
-									r.operationGroup = ""
-									r.pathPattern = "/api/v1/account/threads/{threadId}"
-									r.args = args
-									r.count = 1
-									return r, true
-								default:
-									return
-								}
-							}
-							switch elem[0] {
-							case '/': // Prefix: "/messages"
-
-								if l := len("/messages"); len(elem) >= l && elem[0:l] == "/messages" {
-									elem = elem[l:]
-								} else {
-									break
-								}
-
-								if len(elem) == 0 {
-									// Leaf node.
-									switch method {
-									case "GET":
-										r.name = ListAccountThreadMessagesOperation
-										r.summary = "List messages in a personal account thread"
-										r.operationID = "list-account-thread-messages"
-										r.operationGroup = ""
-										r.pathPattern = "/api/v1/account/threads/{threadId}/messages"
-										r.args = args
-										r.count = 1
-										return r, true
-									default:
-										return
-									}
-								}
-
-							case ':': // Prefix: ":reply"
-
-								if l := len(":reply"); len(elem) >= l && elem[0:l] == ":reply" {
-									elem = elem[l:]
-								} else {
-									break
-								}
-
-								if len(elem) == 0 {
-									// Leaf node.
-									switch method {
-									case "POST":
-										r.name = ReplyAccountThreadOperation
-										r.summary = "Reply to an inbound personal account thread"
-										r.operationID = "reply-account-thread"
-										r.operationGroup = ""
-										r.pathPattern = "/api/v1/account/threads/{threadId}:reply"
-										r.args = args
-										r.count = 1
-										return r, true
-									default:
-										return
-									}
-								}
-
-							}
-
-						}
-
-					}
-
-				case 't': // Prefix: "ttachments"
-
-					if l := len("ttachments"); len(elem) >= l && elem[0:l] == "ttachments" {
-						elem = elem[l:]
-					} else {
-						break
-					}
-
-					if len(elem) == 0 {
-						switch method {
-						case "POST":
-							r.name = UploadAttachmentOperation
-							r.summary = "Upload a project email attachment"
-							r.operationID = "upload-attachment"
-							r.operationGroup = ""
-							r.pathPattern = "/api/v1/attachments"
-							r.args = args
-							r.count = 0
-							return r, true
-						default:
-							return
-						}
-					}
-					switch elem[0] {
-					case '/': // Prefix: "/"
-
-						if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						// Param: "attachmentId"
-						// Match until "/"
-						idx := strings.IndexByte(elem, '/')
-						if idx < 0 {
-							idx = len(elem)
-						}
-						args[0] = elem[:idx]
-						elem = elem[idx:]
-
-						if len(elem) == 0 {
-							break
-						}
-						switch elem[0] {
-						case '/': // Prefix: "/content"
-
-							if l := len("/content"); len(elem) >= l && elem[0:l] == "/content" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							if len(elem) == 0 {
-								// Leaf node.
-								switch method {
-								case "GET":
-									r.name = DownloadAttachmentOperation
-									r.summary = "Download a project email attachment"
-									r.operationID = "download-attachment"
-									r.operationGroup = ""
-									r.pathPattern = "/api/v1/attachments/{attachmentId}/content"
-									r.args = args
-									r.count = 1
-									return r, true
-								default:
-									return
-								}
-							}
-
-						}
-
-					}
-
-				}
-
 			case 'e': // Prefix: "enablement"
 
 				if l := len("enablement"); len(elem) >= l && elem[0:l] == "enablement" {
@@ -1863,45 +892,75 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					}
 				}
 
-			case 'm': // Prefix: "m"
+			case 'i': // Prefix: "inboxes"
 
-				if l := len("m"); len(elem) >= l && elem[0:l] == "m" {
+				if l := len("inboxes"); len(elem) >= l && elem[0:l] == "inboxes" {
 					elem = elem[l:]
 				} else {
 					break
 				}
 
 				if len(elem) == 0 {
-					break
+					switch method {
+					case "GET":
+						r.name = ListInboxesOperation
+						r.summary = "List project inboxes"
+						r.operationID = "list-inboxes"
+						r.operationGroup = ""
+						r.pathPattern = "/api/v1/inboxes"
+						r.args = args
+						r.count = 0
+						return r, true
+					case "POST":
+						r.name = CreateInboxOperation
+						r.summary = "Create or retrieve an inbox for a project member"
+						r.operationID = "create-inbox"
+						r.operationGroup = ""
+						r.pathPattern = "/api/v1/inboxes"
+						r.args = args
+						r.count = 0
+						return r, true
+					default:
+						return
+					}
 				}
 				switch elem[0] {
-				case 'a': // Prefix: "ailboxes"
+				case '/': // Prefix: "/"
 
-					if l := len("ailboxes"); len(elem) >= l && elem[0:l] == "ailboxes" {
+					if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 						elem = elem[l:]
 					} else {
 						break
 					}
 
+					// Param: "inboxId"
+					// Match until one of "/:"
+					idx := strings.IndexAny(elem, "/:")
+					if idx < 0 {
+						idx = len(elem)
+					}
+					args[0] = elem[:idx]
+					elem = elem[idx:]
+
 					if len(elem) == 0 {
 						switch method {
 						case "GET":
-							r.name = ListMailboxesOperation
-							r.summary = "List project mailboxes and allocation states"
-							r.operationID = "list-mailboxes"
+							r.name = GetInboxOperation
+							r.summary = "Get an inbox"
+							r.operationID = "get-inbox"
 							r.operationGroup = ""
-							r.pathPattern = "/api/v1/mailboxes"
+							r.pathPattern = "/api/v1/inboxes/{inboxId}"
 							r.args = args
-							r.count = 0
+							r.count = 1
 							return r, true
-						case "POST":
-							r.name = AllocateMailboxOperation
-							r.summary = "Allocate or retry default mailbox for a service account"
-							r.operationID = "allocate-mailbox"
+						case "PATCH":
+							r.name = UpdateInboxOperation
+							r.summary = "Update inbox settings and forwarding preferences"
+							r.operationID = "update-inbox"
 							r.operationGroup = ""
-							r.pathPattern = "/api/v1/mailboxes"
+							r.pathPattern = "/api/v1/inboxes/{inboxId}"
 							r.args = args
-							r.count = 0
+							r.count = 1
 							return r, true
 						default:
 							return
@@ -1916,71 +975,262 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							break
 						}
 
-						// Param: "mailboxId"
-						// Match until ":"
-						idx := strings.IndexByte(elem, ':')
-						if idx < 0 {
-							idx = len(elem)
-						}
-						args[0] = elem[:idx]
-						elem = elem[idx:]
-
 						if len(elem) == 0 {
-							switch method {
-							case "GET":
-								r.name = GetMailboxOperation
-								r.summary = "Get a project mailbox"
-								r.operationID = "get-mailbox"
-								r.operationGroup = ""
-								r.pathPattern = "/api/v1/mailboxes/{mailboxId}"
-								r.args = args
-								r.count = 1
-								return r, true
-							default:
-								return
-							}
+							break
 						}
 						switch elem[0] {
-						case ':': // Prefix: ":"
+						case 'a': // Prefix: "attachments"
 
-							if l := len(":"); len(elem) >= l && elem[0:l] == ":" {
+							if l := len("attachments"); len(elem) >= l && elem[0:l] == "attachments" {
 								elem = elem[l:]
 							} else {
 								break
 							}
 
 							if len(elem) == 0 {
-								break
+								switch method {
+								case "POST":
+									r.name = UploadAttachmentOperation
+									r.summary = "Upload an email attachment for an inbox"
+									r.operationID = "upload-attachment"
+									r.operationGroup = ""
+									r.pathPattern = "/api/v1/inboxes/{inboxId}/attachments"
+									r.args = args
+									r.count = 1
+									return r, true
+								default:
+									return
+								}
 							}
 							switch elem[0] {
-							case 'p': // Prefix: "pauseOutbound"
+							case '/': // Prefix: "/"
 
-								if l := len("pauseOutbound"); len(elem) >= l && elem[0:l] == "pauseOutbound" {
+								if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 									elem = elem[l:]
 								} else {
 									break
 								}
 
+								// Param: "attachmentId"
+								// Match until "/"
+								idx := strings.IndexByte(elem, '/')
+								if idx < 0 {
+									idx = len(elem)
+								}
+								args[1] = elem[:idx]
+								elem = elem[idx:]
+
 								if len(elem) == 0 {
-									// Leaf node.
+									break
+								}
+								switch elem[0] {
+								case '/': // Prefix: "/content"
+
+									if l := len("/content"); len(elem) >= l && elem[0:l] == "/content" {
+										elem = elem[l:]
+									} else {
+										break
+									}
+
+									if len(elem) == 0 {
+										// Leaf node.
+										switch method {
+										case "GET":
+											r.name = DownloadAttachmentOperation
+											r.summary = "Download an email attachment from an inbox"
+											r.operationID = "download-attachment"
+											r.operationGroup = ""
+											r.pathPattern = "/api/v1/inboxes/{inboxId}/attachments/{attachmentId}/content"
+											r.args = args
+											r.count = 2
+											return r, true
+										default:
+											return
+										}
+									}
+
+								}
+
+							}
+
+						case 'm': // Prefix: "messages"
+
+							if l := len("messages"); len(elem) >= l && elem[0:l] == "messages" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								switch method {
+								case "GET":
+									r.name = ListMessagesOperation
+									r.summary = "List and search messages in an inbox"
+									r.operationID = "list-messages"
+									r.operationGroup = ""
+									r.pathPattern = "/api/v1/inboxes/{inboxId}/messages"
+									r.args = args
+									r.count = 1
+									return r, true
+								case "POST":
+									r.name = SendMessageOperation
+									r.summary = "Send an outbound email from an inbox"
+									r.operationID = "send-message"
+									r.operationGroup = ""
+									r.pathPattern = "/api/v1/inboxes/{inboxId}/messages"
+									r.args = args
+									r.count = 1
+									return r, true
+								default:
+									return
+								}
+							}
+							switch elem[0] {
+							case '/': // Prefix: "/"
+
+								if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								// Param: "messageId"
+								// Match until one of "/:"
+								idx := strings.IndexAny(elem, "/:")
+								if idx < 0 {
+									idx = len(elem)
+								}
+								args[1] = elem[:idx]
+								elem = elem[idx:]
+
+								if len(elem) == 0 {
 									switch method {
-									case "POST":
-										r.name = PauseMailboxOutboundOperation
-										r.summary = "Pause outbound sending on a mailbox"
-										r.operationID = "pause-mailbox-outbound"
+									case "DELETE":
+										r.name = DeleteMessageOperation
+										r.summary = "Delete a message from an inbox"
+										r.operationID = "delete-message"
 										r.operationGroup = ""
-										r.pathPattern = "/api/v1/mailboxes/{mailboxId}:pauseOutbound"
+										r.pathPattern = "/api/v1/inboxes/{inboxId}/messages/{messageId}"
 										r.args = args
-										r.count = 1
+										r.count = 2
+										return r, true
+									case "GET":
+										r.name = GetMessageOperation
+										r.summary = "Get a message"
+										r.operationID = "get-message"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/inboxes/{inboxId}/messages/{messageId}"
+										r.args = args
+										r.count = 2
+										return r, true
+									case "PATCH":
+										r.name = UpdateMessageOperation
+										r.summary = "Update read or flagged state of a message"
+										r.operationID = "update-message"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/inboxes/{inboxId}/messages/{messageId}"
+										r.args = args
+										r.count = 2
 										return r, true
 									default:
 										return
 									}
 								}
+								switch elem[0] {
+								case '/': // Prefix: "/"
 
-							case 'r': // Prefix: "resumeOutbound"
+									if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+										elem = elem[l:]
+									} else {
+										break
+									}
 
-								if l := len("resumeOutbound"); len(elem) >= l && elem[0:l] == "resumeOutbound" {
+									if len(elem) == 0 {
+										break
+									}
+									switch elem[0] {
+									case 'h': // Prefix: "headers"
+
+										if l := len("headers"); len(elem) >= l && elem[0:l] == "headers" {
+											elem = elem[l:]
+										} else {
+											break
+										}
+
+										if len(elem) == 0 {
+											// Leaf node.
+											switch method {
+											case "GET":
+												r.name = GetMessageHeadersOperation
+												r.summary = "Get raw RFC 5322 headers of a message"
+												r.operationID = "get-message-headers"
+												r.operationGroup = ""
+												r.pathPattern = "/api/v1/inboxes/{inboxId}/messages/{messageId}/headers"
+												r.args = args
+												r.count = 2
+												return r, true
+											default:
+												return
+											}
+										}
+
+									case 'r': // Prefix: "raw"
+
+										if l := len("raw"); len(elem) >= l && elem[0:l] == "raw" {
+											elem = elem[l:]
+										} else {
+											break
+										}
+
+										if len(elem) == 0 {
+											// Leaf node.
+											switch method {
+											case "GET":
+												r.name = DownloadMessageRawOperation
+												r.summary = "Download raw RFC 5322 `.eml` source of a message"
+												r.operationID = "download-message-raw"
+												r.operationGroup = ""
+												r.pathPattern = "/api/v1/inboxes/{inboxId}/messages/{messageId}/raw"
+												r.args = args
+												r.count = 2
+												return r, true
+											default:
+												return
+											}
+										}
+
+									}
+
+								case ':': // Prefix: ":reply"
+
+									if l := len(":reply"); len(elem) >= l && elem[0:l] == ":reply" {
+										elem = elem[l:]
+									} else {
+										break
+									}
+
+									if len(elem) == 0 {
+										// Leaf node.
+										switch method {
+										case "POST":
+											r.name = ReplyMessageOperation
+											r.summary = "Reply to a message"
+											r.operationID = "reply-message"
+											r.operationGroup = ""
+											r.pathPattern = "/api/v1/inboxes/{inboxId}/messages/{messageId}:reply"
+											r.args = args
+											r.count = 2
+											return r, true
+										default:
+											return
+										}
+									}
+
+								}
+
+							case ':': // Prefix: ":batchUpdate"
+
+								if l := len(":batchUpdate"); len(elem) >= l && elem[0:l] == ":batchUpdate" {
 									elem = elem[l:]
 								} else {
 									break
@@ -1990,11 +1240,11 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									// Leaf node.
 									switch method {
 									case "POST":
-										r.name = ResumeMailboxOutboundOperation
-										r.summary = "Resume outbound sending on a mailbox"
-										r.operationID = "resume-mailbox-outbound"
+										r.name = BatchUpdateMessagesOperation
+										r.summary = "Batch update read or flagged state on messages in an inbox"
+										r.operationID = "batch-update-messages"
 										r.operationGroup = ""
-										r.pathPattern = "/api/v1/mailboxes/{mailboxId}:resumeOutbound"
+										r.pathPattern = "/api/v1/inboxes/{inboxId}/messages:batchUpdate"
 										r.args = args
 										r.count = 1
 										return r, true
@@ -2005,161 +1255,109 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 
 							}
 
+						case 't': // Prefix: "threads"
+
+							if l := len("threads"); len(elem) >= l && elem[0:l] == "threads" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								switch method {
+								case "GET":
+									r.name = ListInboxThreadsOperation
+									r.summary = "List email threads in an inbox"
+									r.operationID = "list-inbox-threads"
+									r.operationGroup = ""
+									r.pathPattern = "/api/v1/inboxes/{inboxId}/threads"
+									r.args = args
+									r.count = 1
+									return r, true
+								default:
+									return
+								}
+							}
+							switch elem[0] {
+							case '/': // Prefix: "/"
+
+								if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								// Param: "threadId"
+								// Match until "/"
+								idx := strings.IndexByte(elem, '/')
+								if idx < 0 {
+									idx = len(elem)
+								}
+								args[1] = elem[:idx]
+								elem = elem[idx:]
+
+								if len(elem) == 0 {
+									switch method {
+									case "GET":
+										r.name = GetThreadOperation
+										r.summary = "Get a thread in an inbox"
+										r.operationID = "get-thread"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/inboxes/{inboxId}/threads/{threadId}"
+										r.args = args
+										r.count = 2
+										return r, true
+									default:
+										return
+									}
+								}
+								switch elem[0] {
+								case '/': // Prefix: "/messages"
+
+									if l := len("/messages"); len(elem) >= l && elem[0:l] == "/messages" {
+										elem = elem[l:]
+									} else {
+										break
+									}
+
+									if len(elem) == 0 {
+										// Leaf node.
+										switch method {
+										case "GET":
+											r.name = ListThreadMessagesOperation
+											r.summary = "List messages in a thread"
+											r.operationID = "list-thread-messages"
+											r.operationGroup = ""
+											r.pathPattern = "/api/v1/inboxes/{inboxId}/threads/{threadId}/messages"
+											r.args = args
+											r.count = 2
+											return r, true
+										default:
+											return
+										}
+									}
+
+								}
+
+							}
+
 						}
 
-					}
+					case ':': // Prefix: ":"
 
-				case 'e': // Prefix: "essages"
-
-					if l := len("essages"); len(elem) >= l && elem[0:l] == "essages" {
-						elem = elem[l:]
-					} else {
-						break
-					}
-
-					if len(elem) == 0 {
-						switch method {
-						case "GET":
-							r.name = ListMessagesOperation
-							r.summary = "List and search project messages"
-							r.operationID = "list-messages"
-							r.operationGroup = ""
-							r.pathPattern = "/api/v1/messages"
-							r.args = args
-							r.count = 0
-							return r, true
-						case "POST":
-							r.name = SendMessageOperation
-							r.summary = "Send an outbound email from a project mailbox"
-							r.operationID = "send-message"
-							r.operationGroup = ""
-							r.pathPattern = "/api/v1/messages"
-							r.args = args
-							r.count = 0
-							return r, true
-						default:
-							return
-						}
-					}
-					switch elem[0] {
-					case '/': // Prefix: "/"
-
-						if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+						if l := len(":"); len(elem) >= l && elem[0:l] == ":" {
 							elem = elem[l:]
 						} else {
 							break
 						}
 
-						// Param: "messageId"
-						// Match until one of "/:"
-						idx := strings.IndexAny(elem, "/:")
-						if idx < 0 {
-							idx = len(elem)
-						}
-						args[0] = elem[:idx]
-						elem = elem[idx:]
-
 						if len(elem) == 0 {
-							switch method {
-							case "DELETE":
-								r.name = DeleteMessageOperation
-								r.summary = "Delete a project message from the mailbox"
-								r.operationID = "delete-message"
-								r.operationGroup = ""
-								r.pathPattern = "/api/v1/messages/{messageId}"
-								r.args = args
-								r.count = 1
-								return r, true
-							case "GET":
-								r.name = GetMessageOperation
-								r.summary = "Get a project message"
-								r.operationID = "get-message"
-								r.operationGroup = ""
-								r.pathPattern = "/api/v1/messages/{messageId}"
-								r.args = args
-								r.count = 1
-								return r, true
-							case "PATCH":
-								r.name = UpdateMessageOperation
-								r.summary = "Update read or flagged state of a project message"
-								r.operationID = "update-message"
-								r.operationGroup = ""
-								r.pathPattern = "/api/v1/messages/{messageId}"
-								r.args = args
-								r.count = 1
-								return r, true
-							default:
-								return
-							}
+							break
 						}
 						switch elem[0] {
-						case '/': // Prefix: "/"
+						case 'p': // Prefix: "pauseOutbound"
 
-							if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							if len(elem) == 0 {
-								break
-							}
-							switch elem[0] {
-							case 'h': // Prefix: "headers"
-
-								if l := len("headers"); len(elem) >= l && elem[0:l] == "headers" {
-									elem = elem[l:]
-								} else {
-									break
-								}
-
-								if len(elem) == 0 {
-									// Leaf node.
-									switch method {
-									case "GET":
-										r.name = GetMessageHeadersOperation
-										r.summary = "Get raw RFC 5322 headers of a project message"
-										r.operationID = "get-message-headers"
-										r.operationGroup = ""
-										r.pathPattern = "/api/v1/messages/{messageId}/headers"
-										r.args = args
-										r.count = 1
-										return r, true
-									default:
-										return
-									}
-								}
-
-							case 'r': // Prefix: "raw"
-
-								if l := len("raw"); len(elem) >= l && elem[0:l] == "raw" {
-									elem = elem[l:]
-								} else {
-									break
-								}
-
-								if len(elem) == 0 {
-									// Leaf node.
-									switch method {
-									case "GET":
-										r.name = DownloadMessageRawOperation
-										r.summary = "Download raw RFC 5322 `.eml` source of a project message"
-										r.operationID = "download-message-raw"
-										r.operationGroup = ""
-										r.pathPattern = "/api/v1/messages/{messageId}/raw"
-										r.args = args
-										r.count = 1
-										return r, true
-									default:
-										return
-									}
-								}
-
-							}
-
-						case ':': // Prefix: ":reply"
-
-							if l := len(":reply"); len(elem) >= l && elem[0:l] == ":reply" {
+							if l := len("pauseOutbound"); len(elem) >= l && elem[0:l] == "pauseOutbound" {
 								elem = elem[l:]
 							} else {
 								break
@@ -2169,11 +1367,11 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								// Leaf node.
 								switch method {
 								case "POST":
-									r.name = ReplyMessageOperation
-									r.summary = "Reply to a project message"
-									r.operationID = "reply-message"
+									r.name = PauseInboxOutboundOperation
+									r.summary = "Pause outbound sending for an inbox"
+									r.operationID = "pause-inbox-outbound"
 									r.operationGroup = ""
-									r.pathPattern = "/api/v1/messages/{messageId}:reply"
+									r.pathPattern = "/api/v1/inboxes/{inboxId}:pauseOutbound"
 									r.args = args
 									r.count = 1
 									return r, true
@@ -2182,31 +1380,31 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								}
 							}
 
-						}
+						case 'r': // Prefix: "resumeOutbound"
 
-					case ':': // Prefix: ":batchUpdate"
-
-						if l := len(":batchUpdate"); len(elem) >= l && elem[0:l] == ":batchUpdate" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						if len(elem) == 0 {
-							// Leaf node.
-							switch method {
-							case "POST":
-								r.name = BatchUpdateMessagesOperation
-								r.summary = "Batch update read or flagged state on project messages"
-								r.operationID = "batch-update-messages"
-								r.operationGroup = ""
-								r.pathPattern = "/api/v1/messages:batchUpdate"
-								r.args = args
-								r.count = 0
-								return r, true
-							default:
-								return
+							if l := len("resumeOutbound"); len(elem) >= l && elem[0:l] == "resumeOutbound" {
+								elem = elem[l:]
+							} else {
+								break
 							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch method {
+								case "POST":
+									r.name = ResumeInboxOutboundOperation
+									r.summary = "Resume outbound sending for an inbox"
+									r.operationID = "resume-inbox-outbound"
+									r.operationGroup = ""
+									r.pathPattern = "/api/v1/inboxes/{inboxId}:resumeOutbound"
+									r.args = args
+									r.count = 1
+									return r, true
+								default:
+									return
+								}
+							}
+
 						}
 
 					}
@@ -2247,10 +1445,11 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 				}
 
 				if len(elem) == 0 {
+					// Leaf node.
 					switch method {
 					case "GET":
 						r.name = ListThreadsOperation
-						r.summary = "List project email threads"
+						r.summary = "List email threads across project inboxes"
 						r.operationID = "list-threads"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/threads"
@@ -2260,68 +1459,6 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					default:
 						return
 					}
-				}
-				switch elem[0] {
-				case '/': // Prefix: "/"
-
-					if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
-						elem = elem[l:]
-					} else {
-						break
-					}
-
-					// Param: "threadId"
-					// Match until "/"
-					idx := strings.IndexByte(elem, '/')
-					if idx < 0 {
-						idx = len(elem)
-					}
-					args[0] = elem[:idx]
-					elem = elem[idx:]
-
-					if len(elem) == 0 {
-						switch method {
-						case "GET":
-							r.name = GetThreadOperation
-							r.summary = "Get a project email thread"
-							r.operationID = "get-thread"
-							r.operationGroup = ""
-							r.pathPattern = "/api/v1/threads/{threadId}"
-							r.args = args
-							r.count = 1
-							return r, true
-						default:
-							return
-						}
-					}
-					switch elem[0] {
-					case '/': // Prefix: "/messages"
-
-						if l := len("/messages"); len(elem) >= l && elem[0:l] == "/messages" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						if len(elem) == 0 {
-							// Leaf node.
-							switch method {
-							case "GET":
-								r.name = ListThreadMessagesOperation
-								r.summary = "List messages in a project thread"
-								r.operationID = "list-thread-messages"
-								r.operationGroup = ""
-								r.pathPattern = "/api/v1/threads/{threadId}/messages"
-								r.args = args
-								r.count = 1
-								return r, true
-							default:
-								return
-							}
-						}
-
-					}
-
 				}
 
 			case 'u': // Prefix: "usage"

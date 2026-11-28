@@ -15,63 +15,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-func encodeActivateAccountMailboxResponse(response *AccountMailboxResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeAllocateMailboxResponse(response AllocateMailboxRes, w http.ResponseWriter, span trace.Span) error {
-	switch response := response.(type) {
-	case *AllocateMailboxOK:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(200)
-
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	case *AllocateMailboxCreated:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(201)
-
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	default:
-		return errors.Errorf("unexpected response type: %T", response)
-	}
-}
-
-func encodeBatchUpdateAccountMessagesResponse(response *BatchUpdateMessagesResponseBody, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
 func encodeBatchUpdateMessagesResponse(response *BatchUpdateMessagesResponseBody, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -116,95 +59,21 @@ func encodeCreateEnablementResponse(response CreateEnablementRes, w http.Respons
 	}
 }
 
-func encodeDeleteAccountMessageResponse(response *DeleteAccountMessageNoContent, w http.ResponseWriter, span trace.Span) error {
-	w.WriteHeader(204)
+func encodeCreateInboxResponse(response *InboxResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
 
 	return nil
 }
 
 func encodeDeleteMessageResponse(response *DeleteMessageNoContent, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(204)
-
-	return nil
-}
-
-func encodeDownloadAccountAttachmentResponse(response *DownloadAccountAttachmentOKHeaders, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Access-Control-Expose-Headers", "Content-Disposition")
-	// Encoding response headers.
-	{
-		h := uri.NewHeaderEncoder(w.Header())
-		// Encode "Content-Disposition" header.
-		{
-			cfg := uri.HeaderParameterEncodingConfig{
-				Name:    "Content-Disposition",
-				Explode: false,
-			}
-			if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-				if val, ok := response.ContentDisposition.Get(); ok {
-					return e.EncodeValue(conv.StringToString(val))
-				}
-				return nil
-			}); err != nil {
-				return errors.Wrap(err, "encode Content-Disposition header")
-			}
-		}
-		// Encode "Content-Type" header.
-		{
-			cfg := uri.HeaderParameterEncodingConfig{
-				Name:    "Content-Type",
-				Explode: false,
-			}
-			if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-				return e.EncodeValue(conv.StringToString(response.ContentType))
-			}); err != nil {
-				return errors.Wrap(err, "encode Content-Type header")
-			}
-		}
-	}
-	w.WriteHeader(200)
-
-	writer := w
-	if closer, ok := response.Response.Data.(io.Closer); ok {
-		defer closer.Close()
-	}
-	if _, err := io.Copy(writer, response.Response); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeDownloadAccountMessageRawResponse(response *DownloadAccountMessageRawOKHeaders, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "message/rfc822")
-	w.Header().Set("Access-Control-Expose-Headers", "Content-Disposition")
-	// Encoding response headers.
-	{
-		h := uri.NewHeaderEncoder(w.Header())
-		// Encode "Content-Disposition" header.
-		{
-			cfg := uri.HeaderParameterEncodingConfig{
-				Name:    "Content-Disposition",
-				Explode: false,
-			}
-			if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-				if val, ok := response.ContentDisposition.Get(); ok {
-					return e.EncodeValue(conv.StringToString(val))
-				}
-				return nil
-			}); err != nil {
-				return errors.Wrap(err, "encode Content-Disposition header")
-			}
-		}
-	}
-	w.WriteHeader(200)
-
-	writer := w
-	if closer, ok := response.Response.Data.(io.Closer); ok {
-		defer closer.Close()
-	}
-	if _, err := io.Copy(writer, response.Response); err != nil {
-		return errors.Wrap(err, "write")
-	}
 
 	return nil
 }
@@ -290,58 +159,6 @@ func encodeDownloadMessageRawResponse(response *DownloadMessageRawOKHeaders, w h
 	return nil
 }
 
-func encodeGetAccountMailboxResponse(response *AccountMailboxResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeGetAccountMessageResponse(response *MessageResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeGetAccountMessageHeadersResponse(response *MessageHeadersResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeGetAccountThreadResponse(response *ThreadResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
 func encodeGetEnablementResponse(response *EnablementResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -355,7 +172,7 @@ func encodeGetEnablementResponse(response *EnablementResource, w http.ResponseWr
 	return nil
 }
 
-func encodeGetMailboxResponse(response *MailboxResource, w http.ResponseWriter, span trace.Span) error {
+func encodeGetInboxResponse(response *InboxResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -420,7 +237,7 @@ func encodeGetUsageResponse(response *UsageResource, w http.ResponseWriter, span
 	return nil
 }
 
-func encodeListAccountMessagesResponse(response *MessageSummaryListResponseBody, w http.ResponseWriter, span trace.Span) error {
+func encodeListInboxThreadsResponse(response *ThreadListResponseBody, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -433,33 +250,7 @@ func encodeListAccountMessagesResponse(response *MessageSummaryListResponseBody,
 	return nil
 }
 
-func encodeListAccountThreadMessagesResponse(response *MessageSummaryListResponseBody, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeListAccountThreadsResponse(response *ThreadListResponseBody, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeListMailboxesResponse(response *MailboxListResponseBody, w http.ResponseWriter, span trace.Span) error {
+func encodeListInboxesResponse(response *InboxListResponseBody, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -524,22 +315,9 @@ func encodeListThreadsResponse(response *ThreadListResponseBody, w http.Response
 	return nil
 }
 
-func encodePauseMailboxOutboundResponse(response *MailboxResource, w http.ResponseWriter, span trace.Span) error {
+func encodePauseInboxOutboundResponse(response *InboxResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeReplyAccountThreadResponse(response *MessageResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(201)
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -563,7 +341,7 @@ func encodeReplyMessageResponse(response *MessageResource, w http.ResponseWriter
 	return nil
 }
 
-func encodeResumeMailboxOutboundResponse(response *MailboxResource, w http.ResponseWriter, span trace.Span) error {
+func encodeResumeInboxOutboundResponse(response *InboxResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -589,20 +367,7 @@ func encodeSendMessageResponse(response *MessageResource, w http.ResponseWriter,
 	return nil
 }
 
-func encodeUpdateAccountMailboxResponse(response *AccountMailboxResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeUpdateAccountMessageResponse(response *MessageResource, w http.ResponseWriter, span trace.Span) error {
+func encodeUpdateInboxResponse(response *InboxResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -618,19 +383,6 @@ func encodeUpdateAccountMessageResponse(response *MessageResource, w http.Respon
 func encodeUpdateMessageResponse(response *MessageResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeUploadAccountAttachmentResponse(response *AttachmentResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(201)
 
 	e := new(jx.Encoder)
 	response.Encode(e)

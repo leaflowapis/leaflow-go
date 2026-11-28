@@ -33,608 +33,19 @@ func (c *codeRecorder) Unwrap() http.ResponseWriter {
 	return c.ResponseWriter
 }
 
-// handleActivateAccountMailboxRequest handles activate-account-mailbox operation.
-//
-// Idempotently allocates the caller's default personal mailbox address if it has not yet been
-// provisioned. Free of charge and requires no billing account.
-//
-// POST /api/v1/account/mailbox:activate
-func (s *Server) handleActivateAccountMailboxRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("activate-account-mailbox"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/account/mailbox:activate"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ActivateAccountMailboxOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ActivateAccountMailboxOperation,
-			ID:   "activate-account-mailbox",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityAccessTokenAuth(ctx, ActivateAccountMailboxOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "AccessTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:AccessTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-
-	var rawBody []byte
-
-	var response *AccountMailboxResource
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ActivateAccountMailboxOperation,
-			OperationSummary: "Activate personal account mailbox",
-			OperationID:      "activate-account-mailbox",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params:           middleware.Parameters{},
-			Raw:              r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = struct{}
-			Response = *AccountMailboxResource
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			nil,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ActivateAccountMailbox(ctx)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ActivateAccountMailbox(ctx)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeActivateAccountMailboxResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleAllocateMailboxRequest handles allocate-mailbox operation.
-//
-// Idempotently allocates a default mailbox address for an active service account in the project, or
-// retries a previously failed allocation. Requires the project mail service to be enabled (412
-// `MAIL_SERVICE_NOT_ENABLED` otherwise). If the service account already holds an allocated mailbox,
-// returns it with 200.
-//
-// POST /api/v1/mailboxes
-func (s *Server) handleAllocateMailboxRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("allocate-mailbox"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/mailboxes"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), AllocateMailboxOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: AllocateMailboxOperation,
-			ID:   "allocate-mailbox",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, AllocateMailboxOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeAllocateMailboxRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response AllocateMailboxRes
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    AllocateMailboxOperation,
-			OperationSummary: "Allocate or retry default mailbox for a service account",
-			OperationID:      "allocate-mailbox",
-			Body:             request,
-			RawBody:          rawBody,
-			Params:           middleware.Parameters{},
-			Raw:              r,
-		}
-
-		type (
-			Request  = *AllocateMailboxRequestBody
-			Params   = struct{}
-			Response = AllocateMailboxRes
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			nil,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.AllocateMailbox(ctx, request)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.AllocateMailbox(ctx, request)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeAllocateMailboxResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleBatchUpdateAccountMessagesRequest handles batch-update-account-messages operation.
-//
-// Batch update read or flagged state on personal account messages.
-//
-// POST /api/v1/account/messages:batchUpdate
-func (s *Server) handleBatchUpdateAccountMessagesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("batch-update-account-messages"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/account/messages:batchUpdate"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), BatchUpdateAccountMessagesOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: BatchUpdateAccountMessagesOperation,
-			ID:   "batch-update-account-messages",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityAccessTokenAuth(ctx, BatchUpdateAccountMessagesOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "AccessTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:AccessTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeBatchUpdateAccountMessagesRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response *BatchUpdateMessagesResponseBody
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    BatchUpdateAccountMessagesOperation,
-			OperationSummary: "Batch update read or flagged state on personal account messages",
-			OperationID:      "batch-update-account-messages",
-			Body:             request,
-			RawBody:          rawBody,
-			Params:           middleware.Parameters{},
-			Raw:              r,
-		}
-
-		type (
-			Request  = *BatchUpdateMessagesRequestBody
-			Params   = struct{}
-			Response = *BatchUpdateMessagesResponseBody
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			nil,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.BatchUpdateAccountMessages(ctx, request)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.BatchUpdateAccountMessages(ctx, request)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeBatchUpdateAccountMessagesResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
 // handleBatchUpdateMessagesRequest handles batch-update-messages operation.
 //
-// Updates `read` and/or `flagged` on up to 200 messages belonging to the authenticated project in a
-// single call. Service account tokens may only update messages in their own mailbox.
+// Updates `read` and/or `flagged` on up to 200 messages belonging to the specified inbox in a single
+// call.
 //
-// POST /api/v1/messages:batchUpdate
-func (s *Server) handleBatchUpdateMessagesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v1/inboxes/{inboxId}/messages:batchUpdate
+func (s *Server) handleBatchUpdateMessagesRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("batch-update-messages"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/messages:batchUpdate"),
+		semconv.HTTPRouteKey.String("/api/v1/inboxes/{inboxId}/messages:batchUpdate"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -745,6 +156,16 @@ func (s *Server) handleBatchUpdateMessagesRequest(args [0]string, argsEscaped bo
 			return
 		}
 	}
+	params, err := decodeBatchUpdateMessagesParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
 
 	var rawBody []byte
 	request, rawBody, close, err := s.decodeBatchUpdateMessagesRequest(r)
@@ -768,17 +189,22 @@ func (s *Server) handleBatchUpdateMessagesRequest(args [0]string, argsEscaped bo
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    BatchUpdateMessagesOperation,
-			OperationSummary: "Batch update read or flagged state on project messages",
+			OperationSummary: "Batch update read or flagged state on messages in an inbox",
 			OperationID:      "batch-update-messages",
 			Body:             request,
 			RawBody:          rawBody,
-			Params:           middleware.Parameters{},
-			Raw:              r,
+			Params: middleware.Parameters{
+				{
+					Name: "inboxId",
+					In:   "path",
+				}: params.InboxId,
+			},
+			Raw: r,
 		}
 
 		type (
 			Request  = *BatchUpdateMessagesRequestBody
-			Params   = struct{}
+			Params   = BatchUpdateMessagesParams
 			Response = *BatchUpdateMessagesResponseBody
 		)
 		response, err = middleware.HookMiddleware[
@@ -788,14 +214,14 @@ func (s *Server) handleBatchUpdateMessagesRequest(args [0]string, argsEscaped bo
 		](
 			m,
 			mreq,
-			nil,
+			unpackBatchUpdateMessagesParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.BatchUpdateMessages(ctx, request)
+				response, err = s.h.BatchUpdateMessages(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.BatchUpdateMessages(ctx, request)
+		response, err = s.h.BatchUpdateMessages(ctx, request, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -825,15 +251,11 @@ func (s *Server) handleBatchUpdateMessagesRequest(args [0]string, argsEscaped bo
 
 // handleCreateEnablementRequest handles create-enablement operation.
 //
-// Enables the mail service for the authenticated project. Enabling carries no upfront fee; inbound
-// mail is free and outbound mail is billed per accepted recipient with no free outbound allowance.
-// Returns the enablement as `pending` together with its Billing Checkout Session; once the order is
-// accepted, `status` transitions to `active` and default email addresses are allocated for project
-// service accounts.
+// Enables the mail service for the authenticated project and provisions inboxes for active project
+// members. Enabling carries no upfront fee; inbound mail is free and outbound mail is billed per
+// accepted recipient.
 //
 // Refused with 409 `MAIL_SERVICE_ALREADY_ENABLED` while an enablement is `pending` or `active`.
-// Billing refusals are returned with Billing's error code, such as `BILLING_PRICE_UNAVAILABLE` when
-// the service has no price in the project billing account's currency.
 //
 // POST /api/v1/enablement
 func (s *Server) handleCreateEnablementRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1031,24 +453,26 @@ func (s *Server) handleCreateEnablementRequest(args [0]string, argsEscaped bool,
 	}
 }
 
-// handleDeleteAccountMessageRequest handles delete-account-message operation.
+// handleCreateInboxRequest handles create-inbox operation.
 //
-// Delete a personal account message.
+// Idempotently provisions an active `@onleaflow.cloud` inbox for an active member of the authenticated
+// project (human user or service account). When `user_id` is omitted, provisions an inbox for the
+// caller. Returns immediately with the allocated address.
 //
-// DELETE /api/v1/account/messages/{messageId}
-func (s *Server) handleDeleteAccountMessageRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v1/inboxes
+func (s *Server) handleCreateInboxRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("delete-account-message"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/v1/account/messages/{messageId}"),
+		otelogen.OperationID("create-inbox"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/inboxes"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), DeleteAccountMessageOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateInboxOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -1103,23 +527,23 @@ func (s *Server) handleDeleteAccountMessageRequest(args [1]string, argsEscaped b
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: DeleteAccountMessageOperation,
-			ID:   "delete-account-message",
+			Name: CreateInboxOperation,
+			ID:   "create-inbox",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityAccessTokenAuth(ctx, DeleteAccountMessageOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, CreateInboxOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "AccessTokenAuth",
+					Security:         "BearerAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:AccessTokenAuth", err)
+					defer recordError("Security:BearerAuth", err)
 				}
 				return
 			}
@@ -1153,41 +577,41 @@ func (s *Server) handleDeleteAccountMessageRequest(args [1]string, argsEscaped b
 			return
 		}
 	}
-	params, err := decodeDeleteAccountMessageParams(args, argsEscaped, r)
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeCreateInboxRequest(r)
 	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
+		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
 			Err:              err,
 		}
-		defer recordError("DecodeParams", err)
+		defer recordError("DecodeRequest", err)
 		s.cfg.ErrorHandler(ctx, w, r, err)
 		return
 	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
 
-	var rawBody []byte
-
-	var response *DeleteAccountMessageNoContent
+	var response *InboxResource
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    DeleteAccountMessageOperation,
-			OperationSummary: "Delete a personal account message",
-			OperationID:      "delete-account-message",
-			Body:             nil,
+			OperationName:    CreateInboxOperation,
+			OperationSummary: "Create or retrieve an inbox for a project member",
+			OperationID:      "create-inbox",
+			Body:             request,
 			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "messageId",
-					In:   "path",
-				}: params.MessageId,
-			},
-			Raw: r,
+			Params:           middleware.Parameters{},
+			Raw:              r,
 		}
 
 		type (
-			Request  = struct{}
-			Params   = DeleteAccountMessageParams
-			Response = *DeleteAccountMessageNoContent
+			Request  = *CreateInboxRequestBody
+			Params   = struct{}
+			Response = *InboxResource
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -1196,14 +620,14 @@ func (s *Server) handleDeleteAccountMessageRequest(args [1]string, argsEscaped b
 		](
 			m,
 			mreq,
-			unpackDeleteAccountMessageParams,
+			nil,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				err = s.h.DeleteAccountMessage(ctx, params)
+				response, err = s.h.CreateInbox(ctx, request)
 				return response, err
 			},
 		)
 	} else {
-		err = s.h.DeleteAccountMessage(ctx, params)
+		response, err = s.h.CreateInbox(ctx, request)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -1222,7 +646,7 @@ func (s *Server) handleDeleteAccountMessageRequest(args [1]string, argsEscaped b
 		return
 	}
 
-	if err := encodeDeleteAccountMessageResponse(response, w, span); err != nil {
+	if err := encodeCreateInboxResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -1233,17 +657,17 @@ func (s *Server) handleDeleteAccountMessageRequest(args [1]string, argsEscaped b
 
 // handleDeleteMessageRequest handles delete-message operation.
 //
-// Removes the message body, raw archive, and attachments from the tenant mailbox view. Outbound
-// delivery and billing metadata are retained for auditing.
+// Removes the message body, raw archive, and attachments from the tenant inbox view. Outbound delivery
+// and billing metadata are retained for auditing.
 //
-// DELETE /api/v1/messages/{messageId}
-func (s *Server) handleDeleteMessageRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// DELETE /api/v1/inboxes/{inboxId}/messages/{messageId}
+func (s *Server) handleDeleteMessageRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("delete-message"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/v1/messages/{messageId}"),
+		semconv.HTTPRouteKey.String("/api/v1/inboxes/{inboxId}/messages/{messageId}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -1372,11 +796,15 @@ func (s *Server) handleDeleteMessageRequest(args [1]string, argsEscaped bool, w 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    DeleteMessageOperation,
-			OperationSummary: "Delete a project message from the mailbox",
+			OperationSummary: "Delete a message from an inbox",
 			OperationID:      "delete-message",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
+				{
+					Name: "inboxId",
+					In:   "path",
+				}: params.InboxId,
 				{
 					Name: "messageId",
 					In:   "path",
@@ -1432,424 +860,20 @@ func (s *Server) handleDeleteMessageRequest(args [1]string, argsEscaped bool, w 
 	}
 }
 
-// handleDownloadAccountAttachmentRequest handles download-account-attachment operation.
-//
-// Download a personal account attachment.
-//
-// GET /api/v1/account/attachments/{attachmentId}/content
-func (s *Server) handleDownloadAccountAttachmentRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("download-account-attachment"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/account/attachments/{attachmentId}/content"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), DownloadAccountAttachmentOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: DownloadAccountAttachmentOperation,
-			ID:   "download-account-attachment",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityAccessTokenAuth(ctx, DownloadAccountAttachmentOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "AccessTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:AccessTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeDownloadAccountAttachmentParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *DownloadAccountAttachmentOKHeaders
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    DownloadAccountAttachmentOperation,
-			OperationSummary: "Download a personal account attachment",
-			OperationID:      "download-account-attachment",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "attachmentId",
-					In:   "path",
-				}: params.AttachmentId,
-				{
-					Name: "inline",
-					In:   "query",
-				}: params.Inline,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = DownloadAccountAttachmentParams
-			Response = *DownloadAccountAttachmentOKHeaders
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackDownloadAccountAttachmentParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.DownloadAccountAttachment(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.DownloadAccountAttachment(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeDownloadAccountAttachmentResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleDownloadAccountMessageRawRequest handles download-account-message-raw operation.
-//
-// Download raw RFC 5322 `.eml` source of a personal account message.
-//
-// GET /api/v1/account/messages/{messageId}/raw
-func (s *Server) handleDownloadAccountMessageRawRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("download-account-message-raw"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/account/messages/{messageId}/raw"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), DownloadAccountMessageRawOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: DownloadAccountMessageRawOperation,
-			ID:   "download-account-message-raw",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityAccessTokenAuth(ctx, DownloadAccountMessageRawOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "AccessTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:AccessTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeDownloadAccountMessageRawParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *DownloadAccountMessageRawOKHeaders
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    DownloadAccountMessageRawOperation,
-			OperationSummary: "Download raw RFC 5322 `.eml` source of a personal account message",
-			OperationID:      "download-account-message-raw",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "messageId",
-					In:   "path",
-				}: params.MessageId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = DownloadAccountMessageRawParams
-			Response = *DownloadAccountMessageRawOKHeaders
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackDownloadAccountMessageRawParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.DownloadAccountMessageRaw(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.DownloadAccountMessageRaw(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeDownloadAccountMessageRawResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
 // handleDownloadAttachmentRequest handles download-attachment operation.
 //
-// Streams the attachment bytes for an inbound or outbound message in the authenticated project.
+// Streams the attachment bytes for an inbound or outbound message in the specified inbox.
 // `Content-Disposition` is `attachment` unless `inline=true` is requested and the detected content
 // type can be rendered safely.
 //
-// GET /api/v1/attachments/{attachmentId}/content
-func (s *Server) handleDownloadAttachmentRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/inboxes/{inboxId}/attachments/{attachmentId}/content
+func (s *Server) handleDownloadAttachmentRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("download-attachment"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/attachments/{attachmentId}/content"),
+		semconv.HTTPRouteKey.String("/api/v1/inboxes/{inboxId}/attachments/{attachmentId}/content"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -1978,11 +1002,15 @@ func (s *Server) handleDownloadAttachmentRequest(args [1]string, argsEscaped boo
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    DownloadAttachmentOperation,
-			OperationSummary: "Download a project email attachment",
+			OperationSummary: "Download an email attachment from an inbox",
 			OperationID:      "download-attachment",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
+				{
+					Name: "inboxId",
+					In:   "path",
+				}: params.InboxId,
 				{
 					Name: "attachmentId",
 					In:   "path",
@@ -2044,16 +1072,16 @@ func (s *Server) handleDownloadAttachmentRequest(args [1]string, argsEscaped boo
 
 // handleDownloadMessageRawRequest handles download-message-raw operation.
 //
-// Download raw RFC 5322 `.eml` source of a project message.
+// Download raw RFC 5322 `.eml` source of a message.
 //
-// GET /api/v1/messages/{messageId}/raw
-func (s *Server) handleDownloadMessageRawRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/inboxes/{inboxId}/messages/{messageId}/raw
+func (s *Server) handleDownloadMessageRawRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("download-message-raw"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/messages/{messageId}/raw"),
+		semconv.HTTPRouteKey.String("/api/v1/inboxes/{inboxId}/messages/{messageId}/raw"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -2182,11 +1210,15 @@ func (s *Server) handleDownloadMessageRawRequest(args [1]string, argsEscaped boo
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    DownloadMessageRawOperation,
-			OperationSummary: "Download raw RFC 5322 `.eml` source of a project message",
+			OperationSummary: "Download raw RFC 5322 `.eml` source of a message",
 			OperationID:      "download-message-raw",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
+				{
+					Name: "inboxId",
+					In:   "path",
+				}: params.InboxId,
 				{
 					Name: "messageId",
 					In:   "path",
@@ -2242,803 +1274,12 @@ func (s *Server) handleDownloadMessageRawRequest(args [1]string, argsEscaped boo
 	}
 }
 
-// handleGetAccountMailboxRequest handles get-account-mailbox operation.
-//
-// Returns the caller's personal mailbox allocation status, default email address, forwarding
-// preferences, daily reply quota usage, and outbound state. Inbound mail, forwarding to the account's
-// verified email address, and replies to existing inbound threads are free.
-//
-// GET /api/v1/account/mailbox
-func (s *Server) handleGetAccountMailboxRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-account-mailbox"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/account/mailbox"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetAccountMailboxOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: GetAccountMailboxOperation,
-			ID:   "get-account-mailbox",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityAccessTokenAuth(ctx, GetAccountMailboxOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "AccessTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:AccessTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-
-	var rawBody []byte
-
-	var response *AccountMailboxResource
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    GetAccountMailboxOperation,
-			OperationSummary: "Get personal account mailbox",
-			OperationID:      "get-account-mailbox",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params:           middleware.Parameters{},
-			Raw:              r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = struct{}
-			Response = *AccountMailboxResource
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			nil,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetAccountMailbox(ctx)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.GetAccountMailbox(ctx)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeGetAccountMailboxResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleGetAccountMessageRequest handles get-account-message operation.
-//
-// Get a personal account message.
-//
-// GET /api/v1/account/messages/{messageId}
-func (s *Server) handleGetAccountMessageRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-account-message"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/account/messages/{messageId}"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetAccountMessageOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: GetAccountMessageOperation,
-			ID:   "get-account-message",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityAccessTokenAuth(ctx, GetAccountMessageOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "AccessTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:AccessTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeGetAccountMessageParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *MessageResource
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    GetAccountMessageOperation,
-			OperationSummary: "Get a personal account message",
-			OperationID:      "get-account-message",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "messageId",
-					In:   "path",
-				}: params.MessageId,
-				{
-					Name: "include_html",
-					In:   "query",
-				}: params.IncludeHTML,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = GetAccountMessageParams
-			Response = *MessageResource
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackGetAccountMessageParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetAccountMessage(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.GetAccountMessage(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeGetAccountMessageResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleGetAccountMessageHeadersRequest handles get-account-message-headers operation.
-//
-// Get raw RFC 5322 headers of a personal account message.
-//
-// GET /api/v1/account/messages/{messageId}/headers
-func (s *Server) handleGetAccountMessageHeadersRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-account-message-headers"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/account/messages/{messageId}/headers"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetAccountMessageHeadersOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: GetAccountMessageHeadersOperation,
-			ID:   "get-account-message-headers",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityAccessTokenAuth(ctx, GetAccountMessageHeadersOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "AccessTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:AccessTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeGetAccountMessageHeadersParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *MessageHeadersResource
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    GetAccountMessageHeadersOperation,
-			OperationSummary: "Get raw RFC 5322 headers of a personal account message",
-			OperationID:      "get-account-message-headers",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "messageId",
-					In:   "path",
-				}: params.MessageId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = GetAccountMessageHeadersParams
-			Response = *MessageHeadersResource
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackGetAccountMessageHeadersParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetAccountMessageHeaders(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.GetAccountMessageHeaders(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeGetAccountMessageHeadersResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleGetAccountThreadRequest handles get-account-thread operation.
-//
-// Get a personal account email thread.
-//
-// GET /api/v1/account/threads/{threadId}
-func (s *Server) handleGetAccountThreadRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-account-thread"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/account/threads/{threadId}"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetAccountThreadOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: GetAccountThreadOperation,
-			ID:   "get-account-thread",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityAccessTokenAuth(ctx, GetAccountThreadOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "AccessTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:AccessTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeGetAccountThreadParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *ThreadResource
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    GetAccountThreadOperation,
-			OperationSummary: "Get a personal account email thread",
-			OperationID:      "get-account-thread",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "threadId",
-					In:   "path",
-				}: params.ThreadId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = GetAccountThreadParams
-			Response = *ThreadResource
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackGetAccountThreadParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetAccountThread(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.GetAccountThread(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeGetAccountThreadResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
 // handleGetEnablementRequest handles get-enablement operation.
 //
-// Returns the mail service enablement of the authenticated project. Once `status` is `active`, default
-// email addresses are provisioned for active service accounts in the project, inbound delivery is
-// accepted at no charge, and outbound sends are billed per accepted recipient under `subscription_id`
-// (unless `billing_suspended` is true).
+// Returns the mail service enablement of the authenticated project. Once `status` is `active`, inboxes
+// are provisioned for active project members (human members and service accounts alike), inbound
+// delivery is accepted at no charge, and outbound sends are billed per accepted recipient under
+// `subscription_id` (unless `billing_suspended` is true).
 //
 // GET /api/v1/enablement
 func (s *Server) handleGetEnablementRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -3221,24 +1462,24 @@ func (s *Server) handleGetEnablementRequest(args [0]string, argsEscaped bool, w 
 	}
 }
 
-// handleGetMailboxRequest handles get-mailbox operation.
+// handleGetInboxRequest handles get-inbox operation.
 //
-// Returns a single mailbox's address allocation status, outbound state, and unread count.
+// Get an inbox.
 //
-// GET /api/v1/mailboxes/{mailboxId}
-func (s *Server) handleGetMailboxRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/inboxes/{inboxId}
+func (s *Server) handleGetInboxRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-mailbox"),
+		otelogen.OperationID("get-inbox"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/mailboxes/{mailboxId}"),
+		semconv.HTTPRouteKey.String("/api/v1/inboxes/{inboxId}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetMailboxOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetInboxOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -3293,15 +1534,15 @@ func (s *Server) handleGetMailboxRequest(args [1]string, argsEscaped bool, w htt
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: GetMailboxOperation,
-			ID:   "get-mailbox",
+			Name: GetInboxOperation,
+			ID:   "get-inbox",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, GetMailboxOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, GetInboxOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -3343,7 +1584,7 @@ func (s *Server) handleGetMailboxRequest(args [1]string, argsEscaped bool, w htt
 			return
 		}
 	}
-	params, err := decodeGetMailboxParams(args, argsEscaped, r)
+	params, err := decodeGetInboxParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -3356,28 +1597,28 @@ func (s *Server) handleGetMailboxRequest(args [1]string, argsEscaped bool, w htt
 
 	var rawBody []byte
 
-	var response *MailboxResource
+	var response *InboxResource
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    GetMailboxOperation,
-			OperationSummary: "Get a project mailbox",
-			OperationID:      "get-mailbox",
+			OperationName:    GetInboxOperation,
+			OperationSummary: "Get an inbox",
+			OperationID:      "get-inbox",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "mailboxId",
+					Name: "inboxId",
 					In:   "path",
-				}: params.MailboxId,
+				}: params.InboxId,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = GetMailboxParams
-			Response = *MailboxResource
+			Params   = GetInboxParams
+			Response = *InboxResource
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -3386,14 +1627,14 @@ func (s *Server) handleGetMailboxRequest(args [1]string, argsEscaped bool, w htt
 		](
 			m,
 			mreq,
-			unpackGetMailboxParams,
+			unpackGetInboxParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetMailbox(ctx, params)
+				response, err = s.h.GetInbox(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.GetMailbox(ctx, params)
+		response, err = s.h.GetInbox(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -3412,7 +1653,7 @@ func (s *Server) handleGetMailboxRequest(args [1]string, argsEscaped bool, w htt
 		return
 	}
 
-	if err := encodeGetMailboxResponse(response, w, span); err != nil {
+	if err := encodeGetInboxResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -3426,14 +1667,14 @@ func (s *Server) handleGetMailboxRequest(args [1]string, argsEscaped bool, w htt
 // Returns full message details including plain-text body, server-sanitized HTML body (unless
 // `include_html=false`), attachments, and per-recipient delivery statuses.
 //
-// GET /api/v1/messages/{messageId}
-func (s *Server) handleGetMessageRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/inboxes/{inboxId}/messages/{messageId}
+func (s *Server) handleGetMessageRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-message"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/messages/{messageId}"),
+		semconv.HTTPRouteKey.String("/api/v1/inboxes/{inboxId}/messages/{messageId}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -3562,11 +1803,15 @@ func (s *Server) handleGetMessageRequest(args [1]string, argsEscaped bool, w htt
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetMessageOperation,
-			OperationSummary: "Get a project message",
+			OperationSummary: "Get a message",
 			OperationID:      "get-message",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
+				{
+					Name: "inboxId",
+					In:   "path",
+				}: params.InboxId,
 				{
 					Name: "messageId",
 					In:   "path",
@@ -3628,16 +1873,16 @@ func (s *Server) handleGetMessageRequest(args [1]string, argsEscaped bool, w htt
 
 // handleGetMessageHeadersRequest handles get-message-headers operation.
 //
-// Get raw RFC 5322 headers of a project message.
+// Get raw RFC 5322 headers of a message.
 //
-// GET /api/v1/messages/{messageId}/headers
-func (s *Server) handleGetMessageHeadersRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/inboxes/{inboxId}/messages/{messageId}/headers
+func (s *Server) handleGetMessageHeadersRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-message-headers"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/messages/{messageId}/headers"),
+		semconv.HTTPRouteKey.String("/api/v1/inboxes/{inboxId}/messages/{messageId}/headers"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -3766,11 +2011,15 @@ func (s *Server) handleGetMessageHeadersRequest(args [1]string, argsEscaped bool
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetMessageHeadersOperation,
-			OperationSummary: "Get raw RFC 5322 headers of a project message",
+			OperationSummary: "Get raw RFC 5322 headers of a message",
 			OperationID:      "get-message-headers",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
+				{
+					Name: "inboxId",
+					In:   "path",
+				}: params.InboxId,
 				{
 					Name: "messageId",
 					In:   "path",
@@ -3828,16 +2077,16 @@ func (s *Server) handleGetMessageHeadersRequest(args [1]string, argsEscaped bool
 
 // handleGetThreadRequest handles get-thread operation.
 //
-// Get a project email thread.
+// Get a thread in an inbox.
 //
-// GET /api/v1/threads/{threadId}
-func (s *Server) handleGetThreadRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/inboxes/{inboxId}/threads/{threadId}
+func (s *Server) handleGetThreadRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-thread"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/threads/{threadId}"),
+		semconv.HTTPRouteKey.String("/api/v1/inboxes/{inboxId}/threads/{threadId}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -3966,11 +2215,15 @@ func (s *Server) handleGetThreadRequest(args [1]string, argsEscaped bool, w http
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetThreadOperation,
-			OperationSummary: "Get a project email thread",
+			OperationSummary: "Get a thread in an inbox",
 			OperationID:      "get-thread",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
+				{
+					Name: "inboxId",
+					In:   "path",
+				}: params.InboxId,
 				{
 					Name: "threadId",
 					In:   "path",
@@ -4182,13 +2435,13 @@ func (s *Server) handleGetUsageRequest(args [0]string, argsEscaped bool, w http.
 					In:   "query",
 				}: params.To,
 				{
-					Name: "mailbox_id",
+					Name: "inbox_id",
 					In:   "query",
-				}: params.MailboxID,
+				}: params.InboxID,
 				{
-					Name: "service_account_id",
+					Name: "user_id",
 					In:   "query",
-				}: params.ServiceAccountID,
+				}: params.UserID,
 			},
 			Raw: r,
 		}
@@ -4240,24 +2493,25 @@ func (s *Server) handleGetUsageRequest(args [0]string, argsEscaped bool, w http.
 	}
 }
 
-// handleListAccountMessagesRequest handles list-account-messages operation.
+// handleListInboxThreadsRequest handles list-inbox-threads operation.
 //
-// Cursor-paged lightweight message summaries in the caller's personal mailbox, newest first.
+// Cursor-paged conversation threads belonging to the specified inbox, ordered by most recent message
+// first.
 //
-// GET /api/v1/account/messages
-func (s *Server) handleListAccountMessagesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/inboxes/{inboxId}/threads
+func (s *Server) handleListInboxThreadsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-account-messages"),
+		otelogen.OperationID("list-inbox-threads"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/account/messages"),
+		semconv.HTTPRouteKey.String("/api/v1/inboxes/{inboxId}/threads"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListAccountMessagesOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListInboxThreadsOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -4312,677 +2566,15 @@ func (s *Server) handleListAccountMessagesRequest(args [0]string, argsEscaped bo
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: ListAccountMessagesOperation,
-			ID:   "list-account-messages",
+			Name: ListInboxThreadsOperation,
+			ID:   "list-inbox-threads",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityAccessTokenAuth(ctx, ListAccountMessagesOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "AccessTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:AccessTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeListAccountMessagesParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *MessageSummaryListResponseBody
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ListAccountMessagesOperation,
-			OperationSummary: "List and search personal account messages",
-			OperationID:      "list-account-messages",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "limit",
-					In:   "query",
-				}: params.Limit,
-				{
-					Name: "cursor",
-					In:   "query",
-				}: params.Cursor,
-				{
-					Name: "thread_id",
-					In:   "query",
-				}: params.ThreadID,
-				{
-					Name: "direction",
-					In:   "query",
-				}: params.Direction,
-				{
-					Name: "status",
-					In:   "query",
-				}: params.Status,
-				{
-					Name: "from_address",
-					In:   "query",
-				}: params.FromAddress,
-				{
-					Name: "q",
-					In:   "query",
-				}: params.Q,
-				{
-					Name: "unread_only",
-					In:   "query",
-				}: params.UnreadOnly,
-				{
-					Name: "flagged_only",
-					In:   "query",
-				}: params.FlaggedOnly,
-				{
-					Name: "has_attachments",
-					In:   "query",
-				}: params.HasAttachments,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = ListAccountMessagesParams
-			Response = *MessageSummaryListResponseBody
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackListAccountMessagesParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListAccountMessages(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ListAccountMessages(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeListAccountMessagesResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleListAccountThreadMessagesRequest handles list-account-thread-messages operation.
-//
-// Cursor-paged lightweight message summaries belonging to the personal thread, oldest first.
-//
-// GET /api/v1/account/threads/{threadId}/messages
-func (s *Server) handleListAccountThreadMessagesRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-account-thread-messages"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/account/threads/{threadId}/messages"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListAccountThreadMessagesOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ListAccountThreadMessagesOperation,
-			ID:   "list-account-thread-messages",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityAccessTokenAuth(ctx, ListAccountThreadMessagesOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "AccessTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:AccessTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeListAccountThreadMessagesParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *MessageSummaryListResponseBody
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ListAccountThreadMessagesOperation,
-			OperationSummary: "List messages in a personal account thread",
-			OperationID:      "list-account-thread-messages",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "threadId",
-					In:   "path",
-				}: params.ThreadId,
-				{
-					Name: "limit",
-					In:   "query",
-				}: params.Limit,
-				{
-					Name: "cursor",
-					In:   "query",
-				}: params.Cursor,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = ListAccountThreadMessagesParams
-			Response = *MessageSummaryListResponseBody
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackListAccountThreadMessagesParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListAccountThreadMessages(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ListAccountThreadMessages(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeListAccountThreadMessagesResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleListAccountThreadsRequest handles list-account-threads operation.
-//
-// Cursor-paged threads in the caller's personal mailbox, most recent first.
-//
-// GET /api/v1/account/threads
-func (s *Server) handleListAccountThreadsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-account-threads"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/account/threads"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListAccountThreadsOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ListAccountThreadsOperation,
-			ID:   "list-account-threads",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityAccessTokenAuth(ctx, ListAccountThreadsOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "AccessTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:AccessTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeListAccountThreadsParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *ThreadListResponseBody
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ListAccountThreadsOperation,
-			OperationSummary: "List personal account email threads",
-			OperationID:      "list-account-threads",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "limit",
-					In:   "query",
-				}: params.Limit,
-				{
-					Name: "cursor",
-					In:   "query",
-				}: params.Cursor,
-				{
-					Name: "unread_only",
-					In:   "query",
-				}: params.UnreadOnly,
-				{
-					Name: "flagged_only",
-					In:   "query",
-				}: params.FlaggedOnly,
-				{
-					Name: "q",
-					In:   "query",
-				}: params.Q,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = ListAccountThreadsParams
-			Response = *ThreadListResponseBody
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackListAccountThreadsParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListAccountThreads(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ListAccountThreads(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeListAccountThreadsResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleListMailboxesRequest handles list-mailboxes operation.
-//
-// Lists mailboxes in the authenticated project together with each mailbox's email address allocation
-// status and outbound state. Returns an empty list before the project enables the mail service. When
-// called with a service account token, only that service account's own mailbox is returned.
-//
-// GET /api/v1/mailboxes
-func (s *Server) handleListMailboxesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-mailboxes"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/mailboxes"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListMailboxesOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ListMailboxesOperation,
-			ID:   "list-mailboxes",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListMailboxesOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, ListInboxThreadsOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -5024,7 +2616,7 @@ func (s *Server) handleListMailboxesRequest(args [0]string, argsEscaped bool, w 
 			return
 		}
 	}
-	params, err := decodeListMailboxesParams(args, argsEscaped, r)
+	params, err := decodeListInboxThreadsParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -5037,36 +2629,36 @@ func (s *Server) handleListMailboxesRequest(args [0]string, argsEscaped bool, w 
 
 	var rawBody []byte
 
-	var response *MailboxListResponseBody
+	var response *ThreadListResponseBody
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    ListMailboxesOperation,
-			OperationSummary: "List project mailboxes and allocation states",
-			OperationID:      "list-mailboxes",
+			OperationName:    ListInboxThreadsOperation,
+			OperationSummary: "List email threads in an inbox",
+			OperationID:      "list-inbox-threads",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "page",
-					In:   "query",
-				}: params.Page,
+					Name: "inboxId",
+					In:   "path",
+				}: params.InboxId,
 				{
-					Name: "page_size",
+					Name: "limit",
 					In:   "query",
-				}: params.PageSize,
+				}: params.Limit,
 				{
-					Name: "service_account_id",
+					Name: "cursor",
 					In:   "query",
-				}: params.ServiceAccountID,
+				}: params.Cursor,
 				{
-					Name: "allocation_status",
+					Name: "unread_only",
 					In:   "query",
-				}: params.AllocationStatus,
+				}: params.UnreadOnly,
 				{
-					Name: "outbound_status",
+					Name: "flagged_only",
 					In:   "query",
-				}: params.OutboundStatus,
+				}: params.FlaggedOnly,
 				{
 					Name: "keyword",
 					In:   "query",
@@ -5077,8 +2669,8 @@ func (s *Server) handleListMailboxesRequest(args [0]string, argsEscaped bool, w 
 
 		type (
 			Request  = struct{}
-			Params   = ListMailboxesParams
-			Response = *MailboxListResponseBody
+			Params   = ListInboxThreadsParams
+			Response = *ThreadListResponseBody
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -5087,14 +2679,14 @@ func (s *Server) handleListMailboxesRequest(args [0]string, argsEscaped bool, w 
 		](
 			m,
 			mreq,
-			unpackListMailboxesParams,
+			unpackListInboxThreadsParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListMailboxes(ctx, params)
+				response, err = s.h.ListInboxThreads(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.ListMailboxes(ctx, params)
+		response, err = s.h.ListInboxThreads(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -5113,7 +2705,224 @@ func (s *Server) handleListMailboxesRequest(args [0]string, argsEscaped bool, w 
 		return
 	}
 
-	if err := encodeListMailboxesResponse(response, w, span); err != nil {
+	if err := encodeListInboxThreadsResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleListInboxesRequest handles list-inboxes operation.
+//
+// Lists inboxes provisioned for members of the authenticated project (both human members and service
+// accounts). Service account tokens only receive their own inbox.
+//
+// GET /api/v1/inboxes
+func (s *Server) handleListInboxesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-inboxes"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/inboxes"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListInboxesOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListInboxesOperation,
+			ID:   "list-inboxes",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, ListInboxesOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListInboxesParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *InboxListResponseBody
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListInboxesOperation,
+			OperationSummary: "List project inboxes",
+			OperationID:      "list-inboxes",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+				{
+					Name: "user_id",
+					In:   "query",
+				}: params.UserID,
+				{
+					Name: "outbound_status",
+					In:   "query",
+				}: params.OutboundStatus,
+				{
+					Name: "keyword",
+					In:   "query",
+				}: params.Keyword,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListInboxesParams
+			Response = *InboxListResponseBody
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListInboxesParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListInboxes(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListInboxes(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListInboxesResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -5124,18 +2933,17 @@ func (s *Server) handleListMailboxesRequest(args [0]string, argsEscaped bool, w 
 
 // handleListMessagesRequest handles list-messages operation.
 //
-// Cursor-paged lightweight message summaries, newest first, without full body payloads. Service
-// account tokens are automatically restricted to their own mailbox. Call `get-message` to read full
-// plain-text or sanitized HTML bodies and attachments.
+// Cursor-paged lightweight message summaries, newest first, without full body payloads. Call
+// `get-message` to read full plain-text or sanitized HTML bodies and attachments.
 //
-// GET /api/v1/messages
-func (s *Server) handleListMessagesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/inboxes/{inboxId}/messages
+func (s *Server) handleListMessagesRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-messages"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/messages"),
+		semconv.HTTPRouteKey.String("/api/v1/inboxes/{inboxId}/messages"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -5264,11 +3072,15 @@ func (s *Server) handleListMessagesRequest(args [0]string, argsEscaped bool, w h
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListMessagesOperation,
-			OperationSummary: "List and search project messages",
+			OperationSummary: "List and search messages in an inbox",
 			OperationID:      "list-messages",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
+				{
+					Name: "inboxId",
+					In:   "path",
+				}: params.InboxId,
 				{
 					Name: "limit",
 					In:   "query",
@@ -5277,14 +3089,6 @@ func (s *Server) handleListMessagesRequest(args [0]string, argsEscaped bool, w h
 					Name: "cursor",
 					In:   "query",
 				}: params.Cursor,
-				{
-					Name: "mailbox_id",
-					In:   "query",
-				}: params.MailboxID,
-				{
-					Name: "service_account_id",
-					In:   "query",
-				}: params.ServiceAccountID,
 				{
 					Name: "thread_id",
 					In:   "query",
@@ -5595,17 +3399,17 @@ func (s *Server) handleListSuppressionsRequest(args [0]string, argsEscaped bool,
 
 // handleListThreadMessagesRequest handles list-thread-messages operation.
 //
-// Cursor-paged lightweight message summaries belonging to the thread, oldest first. Fetch full body
-// content via `get-message`.
+// Returns lightweight message summaries in chronological order (oldest first) for thread rendering.
+// Call `get-message` for full bodies and attachments.
 //
-// GET /api/v1/threads/{threadId}/messages
-func (s *Server) handleListThreadMessagesRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/inboxes/{inboxId}/threads/{threadId}/messages
+func (s *Server) handleListThreadMessagesRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-thread-messages"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/threads/{threadId}/messages"),
+		semconv.HTTPRouteKey.String("/api/v1/inboxes/{inboxId}/threads/{threadId}/messages"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -5734,11 +3538,15 @@ func (s *Server) handleListThreadMessagesRequest(args [1]string, argsEscaped boo
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListThreadMessagesOperation,
-			OperationSummary: "List messages in a project thread",
+			OperationSummary: "List messages in a thread",
 			OperationID:      "list-thread-messages",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
+				{
+					Name: "inboxId",
+					In:   "path",
+				}: params.InboxId,
 				{
 					Name: "threadId",
 					In:   "path",
@@ -5804,8 +3612,8 @@ func (s *Server) handleListThreadMessagesRequest(args [1]string, argsEscaped boo
 
 // handleListThreadsRequest handles list-threads operation.
 //
-// Cursor-paged conversation threads ordered by most recent message first. Service account tokens are
-// automatically restricted to their own mailbox.
+// Cursor-paged conversation threads across the authenticated project, ordered by most recent message
+// first. Service account tokens are automatically restricted to their own inbox.
 //
 // GET /api/v1/threads
 func (s *Server) handleListThreadsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -5943,7 +3751,7 @@ func (s *Server) handleListThreadsRequest(args [0]string, argsEscaped bool, w ht
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListThreadsOperation,
-			OperationSummary: "List project email threads",
+			OperationSummary: "List email threads across project inboxes",
 			OperationID:      "list-threads",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -5957,13 +3765,9 @@ func (s *Server) handleListThreadsRequest(args [0]string, argsEscaped bool, w ht
 					In:   "query",
 				}: params.Cursor,
 				{
-					Name: "mailbox_id",
+					Name: "inbox_id",
 					In:   "query",
-				}: params.MailboxID,
-				{
-					Name: "service_account_id",
-					In:   "query",
-				}: params.ServiceAccountID,
+				}: params.InboxID,
 				{
 					Name: "unread_only",
 					In:   "query",
@@ -5973,9 +3777,9 @@ func (s *Server) handleListThreadsRequest(args [0]string, argsEscaped bool, w ht
 					In:   "query",
 				}: params.FlaggedOnly,
 				{
-					Name: "q",
+					Name: "keyword",
 					In:   "query",
-				}: params.Q,
+				}: params.Keyword,
 			},
 			Raw: r,
 		}
@@ -6027,25 +3831,24 @@ func (s *Server) handleListThreadsRequest(args [0]string, argsEscaped bool, w ht
 	}
 }
 
-// handlePauseMailboxOutboundRequest handles pause-mailbox-outbound operation.
+// handlePauseInboxOutboundRequest handles pause-inbox-outbound operation.
 //
-// Immediately prevents outbound sending from this mailbox while keeping inbound delivery active.
-// Useful for stopping a runaway automated sender.
+// Stops outbound sending from the inbox while keeping inbound mail delivery active.
 //
-// POST /api/v1/mailboxes/{mailboxId}:pauseOutbound
-func (s *Server) handlePauseMailboxOutboundRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v1/inboxes/{inboxId}:pauseOutbound
+func (s *Server) handlePauseInboxOutboundRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("pause-mailbox-outbound"),
+		otelogen.OperationID("pause-inbox-outbound"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/mailboxes/{mailboxId}:pauseOutbound"),
+		semconv.HTTPRouteKey.String("/api/v1/inboxes/{inboxId}:pauseOutbound"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), PauseMailboxOutboundOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), PauseInboxOutboundOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -6100,15 +3903,15 @@ func (s *Server) handlePauseMailboxOutboundRequest(args [1]string, argsEscaped b
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: PauseMailboxOutboundOperation,
-			ID:   "pause-mailbox-outbound",
+			Name: PauseInboxOutboundOperation,
+			ID:   "pause-inbox-outbound",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, PauseMailboxOutboundOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, PauseInboxOutboundOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -6150,7 +3953,7 @@ func (s *Server) handlePauseMailboxOutboundRequest(args [1]string, argsEscaped b
 			return
 		}
 	}
-	params, err := decodePauseMailboxOutboundParams(args, argsEscaped, r)
+	params, err := decodePauseInboxOutboundParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -6163,28 +3966,28 @@ func (s *Server) handlePauseMailboxOutboundRequest(args [1]string, argsEscaped b
 
 	var rawBody []byte
 
-	var response *MailboxResource
+	var response *InboxResource
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    PauseMailboxOutboundOperation,
-			OperationSummary: "Pause outbound sending on a mailbox",
-			OperationID:      "pause-mailbox-outbound",
+			OperationName:    PauseInboxOutboundOperation,
+			OperationSummary: "Pause outbound sending for an inbox",
+			OperationID:      "pause-inbox-outbound",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "mailboxId",
+					Name: "inboxId",
 					In:   "path",
-				}: params.MailboxId,
+				}: params.InboxId,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = PauseMailboxOutboundParams
-			Response = *MailboxResource
+			Params   = PauseInboxOutboundParams
+			Response = *InboxResource
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -6193,14 +3996,14 @@ func (s *Server) handlePauseMailboxOutboundRequest(args [1]string, argsEscaped b
 		](
 			m,
 			mreq,
-			unpackPauseMailboxOutboundParams,
+			unpackPauseInboxOutboundParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.PauseMailboxOutbound(ctx, params)
+				response, err = s.h.PauseInboxOutbound(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.PauseMailboxOutbound(ctx, params)
+		response, err = s.h.PauseInboxOutbound(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -6219,228 +4022,7 @@ func (s *Server) handlePauseMailboxOutboundRequest(args [1]string, argsEscaped b
 		return
 	}
 
-	if err := encodePauseMailboxOutboundResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleReplyAccountThreadRequest handles reply-account-thread operation.
-//
-// Sends a free single-recipient reply from the caller's personal mailbox to the verified external
-// sender of an existing inbound thread. The recipient is fixed by the thread and cannot be overridden;
-// subject to hourly and daily anti-abuse limits.
-//
-// POST /api/v1/account/threads/{threadId}:reply
-func (s *Server) handleReplyAccountThreadRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("reply-account-thread"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/account/threads/{threadId}:reply"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ReplyAccountThreadOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ReplyAccountThreadOperation,
-			ID:   "reply-account-thread",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityAccessTokenAuth(ctx, ReplyAccountThreadOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "AccessTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:AccessTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeReplyAccountThreadParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeReplyAccountThreadRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response *MessageResource
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ReplyAccountThreadOperation,
-			OperationSummary: "Reply to an inbound personal account thread",
-			OperationID:      "reply-account-thread",
-			Body:             request,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "threadId",
-					In:   "path",
-				}: params.ThreadId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = *ReplyAccountThreadRequestBody
-			Params   = ReplyAccountThreadParams
-			Response = *MessageResource
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackReplyAccountThreadParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ReplyAccountThread(ctx, request, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ReplyAccountThread(ctx, request, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeReplyAccountThreadResponse(response, w, span); err != nil {
+	if err := encodePauseInboxOutboundResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -6451,22 +4033,18 @@ func (s *Server) handleReplyAccountThreadRequest(args [1]string, argsEscaped boo
 
 // handleReplyMessageRequest handles reply-message operation.
 //
-// Sends a billed outbound reply from the original message's mailbox while automatically preserving
-// `In-Reply-To`, `References`, and `Re:` subject folding.
+// Sends an outbound reply from the inbox while preserving `In-Reply-To`, `References`, and `Re:`
+// subject folding. Defaults to replying to the original message's `reply_to` (or `from` if absent);
+// pass `reply_all=true` to include original `to` and `cc` recipients.
 //
-// Defaults to replying to the original message's `reply_to` (or `from` if absent). When `reply_all` is
-// true, deduplicated recipients from the original `to` and `cc` (excluding the sending mailbox's own
-// address) are added to `cc`. Additional `cc` and `bcc` recipients may also be specified; total
-// recipients must not exceed 50.
-//
-// POST /api/v1/messages/{messageId}:reply
-func (s *Server) handleReplyMessageRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v1/inboxes/{inboxId}/messages/{messageId}:reply
+func (s *Server) handleReplyMessageRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("reply-message"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/messages/{messageId}:reply"),
+		semconv.HTTPRouteKey.String("/api/v1/inboxes/{inboxId}/messages/{messageId}:reply"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -6610,11 +4188,15 @@ func (s *Server) handleReplyMessageRequest(args [1]string, argsEscaped bool, w h
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ReplyMessageOperation,
-			OperationSummary: "Reply to a project message",
+			OperationSummary: "Reply to a message",
 			OperationID:      "reply-message",
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
+				{
+					Name: "inboxId",
+					In:   "path",
+				}: params.InboxId,
 				{
 					Name: "messageId",
 					In:   "path",
@@ -6674,25 +4256,26 @@ func (s *Server) handleReplyMessageRequest(args [1]string, argsEscaped bool, w h
 	}
 }
 
-// handleResumeMailboxOutboundRequest handles resume-mailbox-outbound operation.
+// handleResumeInboxOutboundRequest handles resume-inbox-outbound operation.
 //
-// Resumes outbound sending on a mailbox paused by the project or paused automatically for reputation
-// protection. Operator suspensions cannot be cleared here and return 412 `MAIL_MAILBOX_PAUSED`.
+// Resumes outbound sending for a project-paused or reputation-paused inbox. Operator suspensions
+// (`suspended`) cannot be lifted by project users and return 403
+// `MAIL_OUTBOUND_SUSPENDED_BY_OPERATOR`.
 //
-// POST /api/v1/mailboxes/{mailboxId}:resumeOutbound
-func (s *Server) handleResumeMailboxOutboundRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v1/inboxes/{inboxId}:resumeOutbound
+func (s *Server) handleResumeInboxOutboundRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("resume-mailbox-outbound"),
+		otelogen.OperationID("resume-inbox-outbound"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/mailboxes/{mailboxId}:resumeOutbound"),
+		semconv.HTTPRouteKey.String("/api/v1/inboxes/{inboxId}:resumeOutbound"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ResumeMailboxOutboundOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ResumeInboxOutboundOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -6747,15 +4330,15 @@ func (s *Server) handleResumeMailboxOutboundRequest(args [1]string, argsEscaped 
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: ResumeMailboxOutboundOperation,
-			ID:   "resume-mailbox-outbound",
+			Name: ResumeInboxOutboundOperation,
+			ID:   "resume-inbox-outbound",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ResumeMailboxOutboundOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, ResumeInboxOutboundOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -6797,7 +4380,7 @@ func (s *Server) handleResumeMailboxOutboundRequest(args [1]string, argsEscaped 
 			return
 		}
 	}
-	params, err := decodeResumeMailboxOutboundParams(args, argsEscaped, r)
+	params, err := decodeResumeInboxOutboundParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -6810,28 +4393,28 @@ func (s *Server) handleResumeMailboxOutboundRequest(args [1]string, argsEscaped 
 
 	var rawBody []byte
 
-	var response *MailboxResource
+	var response *InboxResource
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    ResumeMailboxOutboundOperation,
-			OperationSummary: "Resume outbound sending on a mailbox",
-			OperationID:      "resume-mailbox-outbound",
+			OperationName:    ResumeInboxOutboundOperation,
+			OperationSummary: "Resume outbound sending for an inbox",
+			OperationID:      "resume-inbox-outbound",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "mailboxId",
+					Name: "inboxId",
 					In:   "path",
-				}: params.MailboxId,
+				}: params.InboxId,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = ResumeMailboxOutboundParams
-			Response = *MailboxResource
+			Params   = ResumeInboxOutboundParams
+			Response = *InboxResource
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -6840,14 +4423,14 @@ func (s *Server) handleResumeMailboxOutboundRequest(args [1]string, argsEscaped 
 		](
 			m,
 			mreq,
-			unpackResumeMailboxOutboundParams,
+			unpackResumeInboxOutboundParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ResumeMailboxOutbound(ctx, params)
+				response, err = s.h.ResumeInboxOutbound(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.ResumeMailboxOutbound(ctx, params)
+		response, err = s.h.ResumeInboxOutbound(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -6866,7 +4449,7 @@ func (s *Server) handleResumeMailboxOutboundRequest(args [1]string, argsEscaped 
 		return
 	}
 
-	if err := encodeResumeMailboxOutboundResponse(response, w, span); err != nil {
+	if err := encodeResumeInboxOutboundResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -6877,28 +4460,24 @@ func (s *Server) handleResumeMailboxOutboundRequest(args [1]string, argsEscaped 
 
 // handleSendMessageRequest handles send-message operation.
 //
-// Submits an outbound email from a project mailbox and bills the project's active mail subscription by
-// the number of accepted recipients (`to` + `cc` + `bcc`, at most 50).
+// Submits an outbound email from the specified inbox and bills the project's active mail subscription
+// by the number of accepted recipients (`to` + `cc` + `bcc`, at most 50).
 //
 //   - Validation, suppression, and rate limits: Messages rejected for invalid arguments (400),
 //     suppressed recipients (422 `MAIL_RECIPIENT_SUPPRESSED`, non-retryable), or rate / daily-quota
 //     limits (429 `MAIL_RATE_LIMITED` with `retry_delay`, retryable) are not billed.
-//   - Accepted sends and bounces: Once accepted (201 with `status: accepted`), delivery proceeds
-//     asynchronously and per-recipient outcomes appear in `deliveries`; subsequent hard bounces remain
-//     billed.
-//   - Sender derivation: `From` is derived strictly from the sending mailbox's allocated address. A
-//     service account token may omit `mailbox_id` to send from its own mailbox.
+//   - Sender derivation: `From` is derived strictly from the inbox's allocated address.
 //   - Plain-text derivation: If only `html` is provided, a plain-text alternative is automatically
 //     derived for multipart delivery.
 //
-// POST /api/v1/messages
-func (s *Server) handleSendMessageRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v1/inboxes/{inboxId}/messages
+func (s *Server) handleSendMessageRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("send-message"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/messages"),
+		semconv.HTTPRouteKey.String("/api/v1/inboxes/{inboxId}/messages"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -7042,11 +4621,15 @@ func (s *Server) handleSendMessageRequest(args [0]string, argsEscaped bool, w ht
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    SendMessageOperation,
-			OperationSummary: "Send an outbound email from a project mailbox",
+			OperationSummary: "Send an outbound email from an inbox",
 			OperationID:      "send-message",
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
+				{
+					Name: "inboxId",
+					In:   "path",
+				}: params.InboxId,
 				{
 					Name: "Idempotency-Key",
 					In:   "header",
@@ -7102,25 +4685,25 @@ func (s *Server) handleSendMessageRequest(args [0]string, argsEscaped bool, w ht
 	}
 }
 
-// handleUpdateAccountMailboxRequest handles update-account-mailbox operation.
+// handleUpdateInboxRequest handles update-inbox operation.
 //
-// Updates forwarding and inbound spam filtering preferences for the caller's personal mailbox.
-// Unsupplied fields are left unchanged.
+// Updates display name, inbound delivery toggle, or optional email forwarding preferences for the
+// inbox. Unsupplied fields are left unchanged.
 //
-// PATCH /api/v1/account/mailbox
-func (s *Server) handleUpdateAccountMailboxRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// PATCH /api/v1/inboxes/{inboxId}
+func (s *Server) handleUpdateInboxRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("update-account-mailbox"),
+		otelogen.OperationID("update-inbox"),
 		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.HTTPRouteKey.String("/api/v1/account/mailbox"),
+		semconv.HTTPRouteKey.String("/api/v1/inboxes/{inboxId}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), UpdateAccountMailboxOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), UpdateInboxOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -7175,23 +4758,23 @@ func (s *Server) handleUpdateAccountMailboxRequest(args [0]string, argsEscaped b
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: UpdateAccountMailboxOperation,
-			ID:   "update-account-mailbox",
+			Name: UpdateInboxOperation,
+			ID:   "update-inbox",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityAccessTokenAuth(ctx, UpdateAccountMailboxOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, UpdateInboxOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "AccessTokenAuth",
+					Security:         "BearerAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:AccessTokenAuth", err)
+					defer recordError("Security:BearerAuth", err)
 				}
 				return
 			}
@@ -7225,207 +4808,7 @@ func (s *Server) handleUpdateAccountMailboxRequest(args [0]string, argsEscaped b
 			return
 		}
 	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeUpdateAccountMailboxRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response *AccountMailboxResource
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    UpdateAccountMailboxOperation,
-			OperationSummary: "Update personal account mailbox preferences",
-			OperationID:      "update-account-mailbox",
-			Body:             request,
-			RawBody:          rawBody,
-			Params:           middleware.Parameters{},
-			Raw:              r,
-		}
-
-		type (
-			Request  = *UpdateAccountMailboxRequestBody
-			Params   = struct{}
-			Response = *AccountMailboxResource
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			nil,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.UpdateAccountMailbox(ctx, request)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.UpdateAccountMailbox(ctx, request)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeUpdateAccountMailboxResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleUpdateAccountMessageRequest handles update-account-message operation.
-//
-// Update read or flagged state of a personal account message.
-//
-// PATCH /api/v1/account/messages/{messageId}
-func (s *Server) handleUpdateAccountMessageRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("update-account-message"),
-		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.HTTPRouteKey.String("/api/v1/account/messages/{messageId}"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), UpdateAccountMessageOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: UpdateAccountMessageOperation,
-			ID:   "update-account-message",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityAccessTokenAuth(ctx, UpdateAccountMessageOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "AccessTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:AccessTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeUpdateAccountMessageParams(args, argsEscaped, r)
+	params, err := decodeUpdateInboxParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -7437,7 +4820,7 @@ func (s *Server) handleUpdateAccountMessageRequest(args [1]string, argsEscaped b
 	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeUpdateAccountMessageRequest(r)
+	request, rawBody, close, err := s.decodeUpdateInboxRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -7453,28 +4836,28 @@ func (s *Server) handleUpdateAccountMessageRequest(args [1]string, argsEscaped b
 		}
 	}()
 
-	var response *MessageResource
+	var response *InboxResource
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    UpdateAccountMessageOperation,
-			OperationSummary: "Update read or flagged state of a personal account message",
-			OperationID:      "update-account-message",
+			OperationName:    UpdateInboxOperation,
+			OperationSummary: "Update inbox settings and forwarding preferences",
+			OperationID:      "update-inbox",
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "messageId",
+					Name: "inboxId",
 					In:   "path",
-				}: params.MessageId,
+				}: params.InboxId,
 			},
 			Raw: r,
 		}
 
 		type (
-			Request  = *UpdateMessageRequestBody
-			Params   = UpdateAccountMessageParams
-			Response = *MessageResource
+			Request  = *UpdateInboxRequestBody
+			Params   = UpdateInboxParams
+			Response = *InboxResource
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -7483,14 +4866,14 @@ func (s *Server) handleUpdateAccountMessageRequest(args [1]string, argsEscaped b
 		](
 			m,
 			mreq,
-			unpackUpdateAccountMessageParams,
+			unpackUpdateInboxParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.UpdateAccountMessage(ctx, request, params)
+				response, err = s.h.UpdateInbox(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.UpdateAccountMessage(ctx, request, params)
+		response, err = s.h.UpdateInbox(ctx, request, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -7509,7 +4892,7 @@ func (s *Server) handleUpdateAccountMessageRequest(args [1]string, argsEscaped b
 		return
 	}
 
-	if err := encodeUpdateAccountMessageResponse(response, w, span); err != nil {
+	if err := encodeUpdateInboxResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -7520,16 +4903,16 @@ func (s *Server) handleUpdateAccountMessageRequest(args [1]string, argsEscaped b
 
 // handleUpdateMessageRequest handles update-message operation.
 //
-// Update read or flagged state of a project message.
+// Update read or flagged state of a message.
 //
-// PATCH /api/v1/messages/{messageId}
-func (s *Server) handleUpdateMessageRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// PATCH /api/v1/inboxes/{inboxId}/messages/{messageId}
+func (s *Server) handleUpdateMessageRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("update-message"),
 		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.HTTPRouteKey.String("/api/v1/messages/{messageId}"),
+		semconv.HTTPRouteKey.String("/api/v1/inboxes/{inboxId}/messages/{messageId}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -7673,11 +5056,15 @@ func (s *Server) handleUpdateMessageRequest(args [1]string, argsEscaped bool, w 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    UpdateMessageOperation,
-			OperationSummary: "Update read or flagged state of a project message",
+			OperationSummary: "Update read or flagged state of a message",
 			OperationID:      "update-message",
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
+				{
+					Name: "inboxId",
+					In:   "path",
+				}: params.InboxId,
 				{
 					Name: "messageId",
 					In:   "path",
@@ -7733,238 +5120,22 @@ func (s *Server) handleUpdateMessageRequest(args [1]string, argsEscaped bool, w 
 	}
 }
 
-// handleUploadAccountAttachmentRequest handles upload-account-attachment operation.
-//
-// Uploads raw file bytes (`application/octet-stream`) for use in `reply-account-thread`. Unreferenced
-// attachments are removed automatically after 24 hours.
-//
-// POST /api/v1/account/attachments
-func (s *Server) handleUploadAccountAttachmentRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("upload-account-attachment"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/account/attachments"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), UploadAccountAttachmentOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: UploadAccountAttachmentOperation,
-			ID:   "upload-account-attachment",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityAccessTokenAuth(ctx, UploadAccountAttachmentOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "AccessTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:AccessTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeUploadAccountAttachmentParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeUploadAccountAttachmentRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response *AttachmentResource
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    UploadAccountAttachmentOperation,
-			OperationSummary: "Upload a personal account reply attachment",
-			OperationID:      "upload-account-attachment",
-			Body:             request,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "filename",
-					In:   "query",
-				}: params.Filename,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = UploadAccountAttachmentReq
-			Params   = UploadAccountAttachmentParams
-			Response = *AttachmentResource
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackUploadAccountAttachmentParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.UploadAccountAttachment(ctx, request, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.UploadAccountAttachment(ctx, request, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeUploadAccountAttachmentResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
 // handleUploadAttachmentRequest handles upload-attachment operation.
 //
 // The body is the raw file bytes (`application/octet-stream`), one file per request. The content type
 // is determined by inspecting the bytes, not from request headers.
 //
-// Pass the returned `id` in `attachment_ids` when calling `send-message`. An unreferenced attachment
-// is removed automatically after 24 hours.
+// Pass the returned `id` in `attachment_ids` when calling `send-message` or `reply-message` on the
+// same inbox. An unreferenced attachment is removed automatically after 24 hours.
 //
-// POST /api/v1/attachments
-func (s *Server) handleUploadAttachmentRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v1/inboxes/{inboxId}/attachments
+func (s *Server) handleUploadAttachmentRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("upload-attachment"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/attachments"),
+		semconv.HTTPRouteKey.String("/api/v1/inboxes/{inboxId}/attachments"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -8108,11 +5279,15 @@ func (s *Server) handleUploadAttachmentRequest(args [0]string, argsEscaped bool,
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    UploadAttachmentOperation,
-			OperationSummary: "Upload a project email attachment",
+			OperationSummary: "Upload an email attachment for an inbox",
 			OperationID:      "upload-attachment",
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
+				{
+					Name: "inboxId",
+					In:   "path",
+				}: params.InboxId,
 				{
 					Name: "filename",
 					In:   "query",

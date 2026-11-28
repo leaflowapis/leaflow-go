@@ -13,177 +13,88 @@ type UnimplementedHandler struct{}
 
 var _ Handler = UnimplementedHandler{}
 
-// ActivateAccountMailbox implements activate-account-mailbox operation.
-//
-// Idempotently allocates the caller's default personal mailbox address if it has not yet been
-// provisioned. Free of charge and requires no billing account.
-//
-// POST /api/v1/account/mailbox:activate
-func (UnimplementedHandler) ActivateAccountMailbox(ctx context.Context) (r *AccountMailboxResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// AllocateMailbox implements allocate-mailbox operation.
-//
-// Idempotently allocates a default mailbox address for an active service account in the project, or
-// retries a previously failed allocation. Requires the project mail service to be enabled (412
-// `MAIL_SERVICE_NOT_ENABLED` otherwise). If the service account already holds an allocated mailbox,
-// returns it with 200.
-//
-// POST /api/v1/mailboxes
-func (UnimplementedHandler) AllocateMailbox(ctx context.Context, req *AllocateMailboxRequestBody) (r AllocateMailboxRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// BatchUpdateAccountMessages implements batch-update-account-messages operation.
-//
-// Batch update read or flagged state on personal account messages.
-//
-// POST /api/v1/account/messages:batchUpdate
-func (UnimplementedHandler) BatchUpdateAccountMessages(ctx context.Context, req *BatchUpdateMessagesRequestBody) (r *BatchUpdateMessagesResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // BatchUpdateMessages implements batch-update-messages operation.
 //
-// Updates `read` and/or `flagged` on up to 200 messages belonging to the authenticated project in a
-// single call. Service account tokens may only update messages in their own mailbox.
+// Updates `read` and/or `flagged` on up to 200 messages belonging to the specified inbox in a single
+// call.
 //
-// POST /api/v1/messages:batchUpdate
-func (UnimplementedHandler) BatchUpdateMessages(ctx context.Context, req *BatchUpdateMessagesRequestBody) (r *BatchUpdateMessagesResponseBody, _ error) {
+// POST /api/v1/inboxes/{inboxId}/messages:batchUpdate
+func (UnimplementedHandler) BatchUpdateMessages(ctx context.Context, req *BatchUpdateMessagesRequestBody, params BatchUpdateMessagesParams) (r *BatchUpdateMessagesResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // CreateEnablement implements create-enablement operation.
 //
-// Enables the mail service for the authenticated project. Enabling carries no upfront fee; inbound
-// mail is free and outbound mail is billed per accepted recipient with no free outbound allowance.
-// Returns the enablement as `pending` together with its Billing Checkout Session; once the order is
-// accepted, `status` transitions to `active` and default email addresses are allocated for project
-// service accounts.
+// Enables the mail service for the authenticated project and provisions inboxes for active project
+// members. Enabling carries no upfront fee; inbound mail is free and outbound mail is billed per
+// accepted recipient.
 //
 // Refused with 409 `MAIL_SERVICE_ALREADY_ENABLED` while an enablement is `pending` or `active`.
-// Billing refusals are returned with Billing's error code, such as `BILLING_PRICE_UNAVAILABLE` when
-// the service has no price in the project billing account's currency.
 //
 // POST /api/v1/enablement
 func (UnimplementedHandler) CreateEnablement(ctx context.Context, req *CreateEnablementRequestBody) (r CreateEnablementRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// DeleteAccountMessage implements delete-account-message operation.
+// CreateInbox implements create-inbox operation.
 //
-// Delete a personal account message.
+// Idempotently provisions an active `@onleaflow.cloud` inbox for an active member of the authenticated
+// project (human user or service account). When `user_id` is omitted, provisions an inbox for the
+// caller. Returns immediately with the allocated address.
 //
-// DELETE /api/v1/account/messages/{messageId}
-func (UnimplementedHandler) DeleteAccountMessage(ctx context.Context, params DeleteAccountMessageParams) error {
-	return ht.ErrNotImplemented
+// POST /api/v1/inboxes
+func (UnimplementedHandler) CreateInbox(ctx context.Context, req *CreateInboxRequestBody) (r *InboxResource, _ error) {
+	return r, ht.ErrNotImplemented
 }
 
 // DeleteMessage implements delete-message operation.
 //
-// Removes the message body, raw archive, and attachments from the tenant mailbox view. Outbound
-// delivery and billing metadata are retained for auditing.
+// Removes the message body, raw archive, and attachments from the tenant inbox view. Outbound delivery
+// and billing metadata are retained for auditing.
 //
-// DELETE /api/v1/messages/{messageId}
+// DELETE /api/v1/inboxes/{inboxId}/messages/{messageId}
 func (UnimplementedHandler) DeleteMessage(ctx context.Context, params DeleteMessageParams) error {
 	return ht.ErrNotImplemented
 }
 
-// DownloadAccountAttachment implements download-account-attachment operation.
-//
-// Download a personal account attachment.
-//
-// GET /api/v1/account/attachments/{attachmentId}/content
-func (UnimplementedHandler) DownloadAccountAttachment(ctx context.Context, params DownloadAccountAttachmentParams) (r *DownloadAccountAttachmentOKHeaders, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// DownloadAccountMessageRaw implements download-account-message-raw operation.
-//
-// Download raw RFC 5322 `.eml` source of a personal account message.
-//
-// GET /api/v1/account/messages/{messageId}/raw
-func (UnimplementedHandler) DownloadAccountMessageRaw(ctx context.Context, params DownloadAccountMessageRawParams) (r *DownloadAccountMessageRawOKHeaders, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // DownloadAttachment implements download-attachment operation.
 //
-// Streams the attachment bytes for an inbound or outbound message in the authenticated project.
+// Streams the attachment bytes for an inbound or outbound message in the specified inbox.
 // `Content-Disposition` is `attachment` unless `inline=true` is requested and the detected content
 // type can be rendered safely.
 //
-// GET /api/v1/attachments/{attachmentId}/content
+// GET /api/v1/inboxes/{inboxId}/attachments/{attachmentId}/content
 func (UnimplementedHandler) DownloadAttachment(ctx context.Context, params DownloadAttachmentParams) (r *DownloadAttachmentOKHeaders, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // DownloadMessageRaw implements download-message-raw operation.
 //
-// Download raw RFC 5322 `.eml` source of a project message.
+// Download raw RFC 5322 `.eml` source of a message.
 //
-// GET /api/v1/messages/{messageId}/raw
+// GET /api/v1/inboxes/{inboxId}/messages/{messageId}/raw
 func (UnimplementedHandler) DownloadMessageRaw(ctx context.Context, params DownloadMessageRawParams) (r *DownloadMessageRawOKHeaders, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// GetAccountMailbox implements get-account-mailbox operation.
-//
-// Returns the caller's personal mailbox allocation status, default email address, forwarding
-// preferences, daily reply quota usage, and outbound state. Inbound mail, forwarding to the account's
-// verified email address, and replies to existing inbound threads are free.
-//
-// GET /api/v1/account/mailbox
-func (UnimplementedHandler) GetAccountMailbox(ctx context.Context) (r *AccountMailboxResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// GetAccountMessage implements get-account-message operation.
-//
-// Get a personal account message.
-//
-// GET /api/v1/account/messages/{messageId}
-func (UnimplementedHandler) GetAccountMessage(ctx context.Context, params GetAccountMessageParams) (r *MessageResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// GetAccountMessageHeaders implements get-account-message-headers operation.
-//
-// Get raw RFC 5322 headers of a personal account message.
-//
-// GET /api/v1/account/messages/{messageId}/headers
-func (UnimplementedHandler) GetAccountMessageHeaders(ctx context.Context, params GetAccountMessageHeadersParams) (r *MessageHeadersResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// GetAccountThread implements get-account-thread operation.
-//
-// Get a personal account email thread.
-//
-// GET /api/v1/account/threads/{threadId}
-func (UnimplementedHandler) GetAccountThread(ctx context.Context, params GetAccountThreadParams) (r *ThreadResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // GetEnablement implements get-enablement operation.
 //
-// Returns the mail service enablement of the authenticated project. Once `status` is `active`, default
-// email addresses are provisioned for active service accounts in the project, inbound delivery is
-// accepted at no charge, and outbound sends are billed per accepted recipient under `subscription_id`
-// (unless `billing_suspended` is true).
+// Returns the mail service enablement of the authenticated project. Once `status` is `active`, inboxes
+// are provisioned for active project members (human members and service accounts alike), inbound
+// delivery is accepted at no charge, and outbound sends are billed per accepted recipient under
+// `subscription_id` (unless `billing_suspended` is true).
 //
 // GET /api/v1/enablement
 func (UnimplementedHandler) GetEnablement(ctx context.Context) (r *EnablementResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// GetMailbox implements get-mailbox operation.
+// GetInbox implements get-inbox operation.
 //
-// Returns a single mailbox's address allocation status, outbound state, and unread count.
+// Get an inbox.
 //
-// GET /api/v1/mailboxes/{mailboxId}
-func (UnimplementedHandler) GetMailbox(ctx context.Context, params GetMailboxParams) (r *MailboxResource, _ error) {
+// GET /api/v1/inboxes/{inboxId}
+func (UnimplementedHandler) GetInbox(ctx context.Context, params GetInboxParams) (r *InboxResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -192,25 +103,25 @@ func (UnimplementedHandler) GetMailbox(ctx context.Context, params GetMailboxPar
 // Returns full message details including plain-text body, server-sanitized HTML body (unless
 // `include_html=false`), attachments, and per-recipient delivery statuses.
 //
-// GET /api/v1/messages/{messageId}
+// GET /api/v1/inboxes/{inboxId}/messages/{messageId}
 func (UnimplementedHandler) GetMessage(ctx context.Context, params GetMessageParams) (r *MessageResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // GetMessageHeaders implements get-message-headers operation.
 //
-// Get raw RFC 5322 headers of a project message.
+// Get raw RFC 5322 headers of a message.
 //
-// GET /api/v1/messages/{messageId}/headers
+// GET /api/v1/inboxes/{inboxId}/messages/{messageId}/headers
 func (UnimplementedHandler) GetMessageHeaders(ctx context.Context, params GetMessageHeadersParams) (r *MessageHeadersResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // GetThread implements get-thread operation.
 //
-// Get a project email thread.
+// Get a thread in an inbox.
 //
-// GET /api/v1/threads/{threadId}
+// GET /api/v1/inboxes/{inboxId}/threads/{threadId}
 func (UnimplementedHandler) GetThread(ctx context.Context, params GetThreadParams) (r *ThreadResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -226,51 +137,32 @@ func (UnimplementedHandler) GetUsage(ctx context.Context, params GetUsageParams)
 	return r, ht.ErrNotImplemented
 }
 
-// ListAccountMessages implements list-account-messages operation.
+// ListInboxThreads implements list-inbox-threads operation.
 //
-// Cursor-paged lightweight message summaries in the caller's personal mailbox, newest first.
+// Cursor-paged conversation threads belonging to the specified inbox, ordered by most recent message
+// first.
 //
-// GET /api/v1/account/messages
-func (UnimplementedHandler) ListAccountMessages(ctx context.Context, params ListAccountMessagesParams) (r *MessageSummaryListResponseBody, _ error) {
+// GET /api/v1/inboxes/{inboxId}/threads
+func (UnimplementedHandler) ListInboxThreads(ctx context.Context, params ListInboxThreadsParams) (r *ThreadListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// ListAccountThreadMessages implements list-account-thread-messages operation.
+// ListInboxes implements list-inboxes operation.
 //
-// Cursor-paged lightweight message summaries belonging to the personal thread, oldest first.
+// Lists inboxes provisioned for members of the authenticated project (both human members and service
+// accounts). Service account tokens only receive their own inbox.
 //
-// GET /api/v1/account/threads/{threadId}/messages
-func (UnimplementedHandler) ListAccountThreadMessages(ctx context.Context, params ListAccountThreadMessagesParams) (r *MessageSummaryListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListAccountThreads implements list-account-threads operation.
-//
-// Cursor-paged threads in the caller's personal mailbox, most recent first.
-//
-// GET /api/v1/account/threads
-func (UnimplementedHandler) ListAccountThreads(ctx context.Context, params ListAccountThreadsParams) (r *ThreadListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListMailboxes implements list-mailboxes operation.
-//
-// Lists mailboxes in the authenticated project together with each mailbox's email address allocation
-// status and outbound state. Returns an empty list before the project enables the mail service. When
-// called with a service account token, only that service account's own mailbox is returned.
-//
-// GET /api/v1/mailboxes
-func (UnimplementedHandler) ListMailboxes(ctx context.Context, params ListMailboxesParams) (r *MailboxListResponseBody, _ error) {
+// GET /api/v1/inboxes
+func (UnimplementedHandler) ListInboxes(ctx context.Context, params ListInboxesParams) (r *InboxListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // ListMessages implements list-messages operation.
 //
-// Cursor-paged lightweight message summaries, newest first, without full body payloads. Service
-// account tokens are automatically restricted to their own mailbox. Call `get-message` to read full
-// plain-text or sanitized HTML bodies and attachments.
+// Cursor-paged lightweight message summaries, newest first, without full body payloads. Call
+// `get-message` to read full plain-text or sanitized HTML bodies and attachments.
 //
-// GET /api/v1/messages
+// GET /api/v1/inboxes/{inboxId}/messages
 func (UnimplementedHandler) ListMessages(ctx context.Context, params ListMessagesParams) (r *MessageSummaryListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -287,126 +179,88 @@ func (UnimplementedHandler) ListSuppressions(ctx context.Context, params ListSup
 
 // ListThreadMessages implements list-thread-messages operation.
 //
-// Cursor-paged lightweight message summaries belonging to the thread, oldest first. Fetch full body
-// content via `get-message`.
+// Returns lightweight message summaries in chronological order (oldest first) for thread rendering.
+// Call `get-message` for full bodies and attachments.
 //
-// GET /api/v1/threads/{threadId}/messages
+// GET /api/v1/inboxes/{inboxId}/threads/{threadId}/messages
 func (UnimplementedHandler) ListThreadMessages(ctx context.Context, params ListThreadMessagesParams) (r *MessageSummaryListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // ListThreads implements list-threads operation.
 //
-// Cursor-paged conversation threads ordered by most recent message first. Service account tokens are
-// automatically restricted to their own mailbox.
+// Cursor-paged conversation threads across the authenticated project, ordered by most recent message
+// first. Service account tokens are automatically restricted to their own inbox.
 //
 // GET /api/v1/threads
 func (UnimplementedHandler) ListThreads(ctx context.Context, params ListThreadsParams) (r *ThreadListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// PauseMailboxOutbound implements pause-mailbox-outbound operation.
+// PauseInboxOutbound implements pause-inbox-outbound operation.
 //
-// Immediately prevents outbound sending from this mailbox while keeping inbound delivery active.
-// Useful for stopping a runaway automated sender.
+// Stops outbound sending from the inbox while keeping inbound mail delivery active.
 //
-// POST /api/v1/mailboxes/{mailboxId}:pauseOutbound
-func (UnimplementedHandler) PauseMailboxOutbound(ctx context.Context, params PauseMailboxOutboundParams) (r *MailboxResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ReplyAccountThread implements reply-account-thread operation.
-//
-// Sends a free single-recipient reply from the caller's personal mailbox to the verified external
-// sender of an existing inbound thread. The recipient is fixed by the thread and cannot be overridden;
-// subject to hourly and daily anti-abuse limits.
-//
-// POST /api/v1/account/threads/{threadId}:reply
-func (UnimplementedHandler) ReplyAccountThread(ctx context.Context, req *ReplyAccountThreadRequestBody, params ReplyAccountThreadParams) (r *MessageResource, _ error) {
+// POST /api/v1/inboxes/{inboxId}:pauseOutbound
+func (UnimplementedHandler) PauseInboxOutbound(ctx context.Context, params PauseInboxOutboundParams) (r *InboxResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // ReplyMessage implements reply-message operation.
 //
-// Sends a billed outbound reply from the original message's mailbox while automatically preserving
-// `In-Reply-To`, `References`, and `Re:` subject folding.
+// Sends an outbound reply from the inbox while preserving `In-Reply-To`, `References`, and `Re:`
+// subject folding. Defaults to replying to the original message's `reply_to` (or `from` if absent);
+// pass `reply_all=true` to include original `to` and `cc` recipients.
 //
-// Defaults to replying to the original message's `reply_to` (or `from` if absent). When `reply_all` is
-// true, deduplicated recipients from the original `to` and `cc` (excluding the sending mailbox's own
-// address) are added to `cc`. Additional `cc` and `bcc` recipients may also be specified; total
-// recipients must not exceed 50.
-//
-// POST /api/v1/messages/{messageId}:reply
+// POST /api/v1/inboxes/{inboxId}/messages/{messageId}:reply
 func (UnimplementedHandler) ReplyMessage(ctx context.Context, req *ReplyMessageRequestBody, params ReplyMessageParams) (r *MessageResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// ResumeMailboxOutbound implements resume-mailbox-outbound operation.
+// ResumeInboxOutbound implements resume-inbox-outbound operation.
 //
-// Resumes outbound sending on a mailbox paused by the project or paused automatically for reputation
-// protection. Operator suspensions cannot be cleared here and return 412 `MAIL_MAILBOX_PAUSED`.
+// Resumes outbound sending for a project-paused or reputation-paused inbox. Operator suspensions
+// (`suspended`) cannot be lifted by project users and return 403
+// `MAIL_OUTBOUND_SUSPENDED_BY_OPERATOR`.
 //
-// POST /api/v1/mailboxes/{mailboxId}:resumeOutbound
-func (UnimplementedHandler) ResumeMailboxOutbound(ctx context.Context, params ResumeMailboxOutboundParams) (r *MailboxResource, _ error) {
+// POST /api/v1/inboxes/{inboxId}:resumeOutbound
+func (UnimplementedHandler) ResumeInboxOutbound(ctx context.Context, params ResumeInboxOutboundParams) (r *InboxResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // SendMessage implements send-message operation.
 //
-// Submits an outbound email from a project mailbox and bills the project's active mail subscription by
-// the number of accepted recipients (`to` + `cc` + `bcc`, at most 50).
+// Submits an outbound email from the specified inbox and bills the project's active mail subscription
+// by the number of accepted recipients (`to` + `cc` + `bcc`, at most 50).
 //
 //   - Validation, suppression, and rate limits: Messages rejected for invalid arguments (400),
 //     suppressed recipients (422 `MAIL_RECIPIENT_SUPPRESSED`, non-retryable), or rate / daily-quota
 //     limits (429 `MAIL_RATE_LIMITED` with `retry_delay`, retryable) are not billed.
-//   - Accepted sends and bounces: Once accepted (201 with `status: accepted`), delivery proceeds
-//     asynchronously and per-recipient outcomes appear in `deliveries`; subsequent hard bounces remain
-//     billed.
-//   - Sender derivation: `From` is derived strictly from the sending mailbox's allocated address. A
-//     service account token may omit `mailbox_id` to send from its own mailbox.
+//   - Sender derivation: `From` is derived strictly from the inbox's allocated address.
 //   - Plain-text derivation: If only `html` is provided, a plain-text alternative is automatically
 //     derived for multipart delivery.
 //
-// POST /api/v1/messages
+// POST /api/v1/inboxes/{inboxId}/messages
 func (UnimplementedHandler) SendMessage(ctx context.Context, req *SendMessageRequestBody, params SendMessageParams) (r *MessageResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// UpdateAccountMailbox implements update-account-mailbox operation.
+// UpdateInbox implements update-inbox operation.
 //
-// Updates forwarding and inbound spam filtering preferences for the caller's personal mailbox.
-// Unsupplied fields are left unchanged.
+// Updates display name, inbound delivery toggle, or optional email forwarding preferences for the
+// inbox. Unsupplied fields are left unchanged.
 //
-// PATCH /api/v1/account/mailbox
-func (UnimplementedHandler) UpdateAccountMailbox(ctx context.Context, req *UpdateAccountMailboxRequestBody) (r *AccountMailboxResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// UpdateAccountMessage implements update-account-message operation.
-//
-// Update read or flagged state of a personal account message.
-//
-// PATCH /api/v1/account/messages/{messageId}
-func (UnimplementedHandler) UpdateAccountMessage(ctx context.Context, req *UpdateMessageRequestBody, params UpdateAccountMessageParams) (r *MessageResource, _ error) {
+// PATCH /api/v1/inboxes/{inboxId}
+func (UnimplementedHandler) UpdateInbox(ctx context.Context, req *UpdateInboxRequestBody, params UpdateInboxParams) (r *InboxResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // UpdateMessage implements update-message operation.
 //
-// Update read or flagged state of a project message.
+// Update read or flagged state of a message.
 //
-// PATCH /api/v1/messages/{messageId}
+// PATCH /api/v1/inboxes/{inboxId}/messages/{messageId}
 func (UnimplementedHandler) UpdateMessage(ctx context.Context, req *UpdateMessageRequestBody, params UpdateMessageParams) (r *MessageResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// UploadAccountAttachment implements upload-account-attachment operation.
-//
-// Uploads raw file bytes (`application/octet-stream`) for use in `reply-account-thread`. Unreferenced
-// attachments are removed automatically after 24 hours.
-//
-// POST /api/v1/account/attachments
-func (UnimplementedHandler) UploadAccountAttachment(ctx context.Context, req UploadAccountAttachmentReq, params UploadAccountAttachmentParams) (r *AttachmentResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -415,10 +269,10 @@ func (UnimplementedHandler) UploadAccountAttachment(ctx context.Context, req Upl
 // The body is the raw file bytes (`application/octet-stream`), one file per request. The content type
 // is determined by inspecting the bytes, not from request headers.
 //
-// Pass the returned `id` in `attachment_ids` when calling `send-message`. An unreferenced attachment
-// is removed automatically after 24 hours.
+// Pass the returned `id` in `attachment_ids` when calling `send-message` or `reply-message` on the
+// same inbox. An unreferenced attachment is removed automatically after 24 hours.
 //
-// POST /api/v1/attachments
+// POST /api/v1/inboxes/{inboxId}/attachments
 func (UnimplementedHandler) UploadAttachment(ctx context.Context, req UploadAttachmentReq, params UploadAttachmentParams) (r *AttachmentResource, _ error) {
 	return r, ht.ErrNotImplemented
 }

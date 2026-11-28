@@ -10,34 +10,6 @@ import (
 	ht "github.com/ogen-go/ogen/http"
 )
 
-func encodeAllocateMailboxRequest(
-	req *AllocateMailboxRequestBody,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
-func encodeBatchUpdateAccountMessagesRequest(
-	req *BatchUpdateMessagesRequestBody,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
 func encodeBatchUpdateMessagesRequest(
 	req *BatchUpdateMessagesRequestBody,
 	r *http.Request,
@@ -66,8 +38,8 @@ func encodeCreateEnablementRequest(
 	return nil
 }
 
-func encodeReplyAccountThreadRequest(
-	req *ReplyAccountThreadRequestBody,
+func encodeCreateInboxRequest(
+	req *CreateInboxRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -108,22 +80,8 @@ func encodeSendMessageRequest(
 	return nil
 }
 
-func encodeUpdateAccountMailboxRequest(
-	req *UpdateAccountMailboxRequestBody,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
-func encodeUpdateAccountMessageRequest(
-	req *UpdateMessageRequestBody,
+func encodeUpdateInboxRequest(
+	req *UpdateInboxRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -147,16 +105,6 @@ func encodeUpdateMessageRequest(
 	}
 	encoded := e.Bytes()
 	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
-func encodeUploadAccountAttachmentRequest(
-	req UploadAccountAttachmentReq,
-	r *http.Request,
-) error {
-	const contentType = "application/octet-stream"
-	body := req
-	ht.SetBody(r, body, contentType)
 	return nil
 }
 
