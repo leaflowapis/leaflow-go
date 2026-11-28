@@ -807,12 +807,6 @@ type Handler interface {
 	//
 	// GET /api/v2/network-interfaces/{networkInterfaceId}
 	GetNetworkInterface(ctx context.Context, params GetNetworkInterfaceParams) (*NetworkInterface, error)
-	// GetOperationLog implements get-operation-log operation.
-	//
-	// Returns one entry of the project's operation log.
-	//
-	// GET /api/v2/operation-logs/{operationLogId}
-	GetOperationLog(ctx context.Context, params GetOperationLogParams) (*OperationLogResource, error)
 	// GetPrivateImage implements get-private-image operation.
 	//
 	// Returns a private image of this project; any other image, public images included, is reported as not
@@ -1013,19 +1007,6 @@ type Handler interface {
 	//
 	// GET /api/v2/network-interfaces
 	ListNetworkInterfaces(ctx context.Context, params ListNetworkInterfacesParams) (*NetworkInterfaceListResponseBody, error)
-	// ListOperationLogs implements list-operation-logs operation.
-	//
-	// Records every write operation in the project: who performed it, when, on what, and its outcome. Read
-	// operations are not recorded.
-	//
-	// Operations performed by the platform have `actor_type` set to `platform`, with `user_id` and
-	// `user_name` set to null.
-	//
-	// Fields such as passwords are replaced with a placeholder as the record is written and never appear
-	// in `payload`.
-	//
-	// GET /api/v2/operation-logs
-	ListOperationLogs(ctx context.Context, params ListOperationLogsParams) (*OperationLogListResponseBody, error)
 	// ListPrivateImages implements list-private-images operation.
 	//
 	// Lists the private images of this project, newest first, in every status: including while a capture

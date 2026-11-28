@@ -977,15 +977,6 @@ func (UnimplementedHandler) GetNetworkInterface(ctx context.Context, params GetN
 	return r, ht.ErrNotImplemented
 }
 
-// GetOperationLog implements get-operation-log operation.
-//
-// Returns one entry of the project's operation log.
-//
-// GET /api/v2/operation-logs/{operationLogId}
-func (UnimplementedHandler) GetOperationLog(ctx context.Context, params GetOperationLogParams) (r *OperationLogResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // GetPrivateImage implements get-private-image operation.
 //
 // Returns a private image of this project; any other image, public images included, is reported as not
@@ -1270,22 +1261,6 @@ func (UnimplementedHandler) ListLaunchTemplates(ctx context.Context, params List
 //
 // GET /api/v2/network-interfaces
 func (UnimplementedHandler) ListNetworkInterfaces(ctx context.Context, params ListNetworkInterfacesParams) (r *NetworkInterfaceListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListOperationLogs implements list-operation-logs operation.
-//
-// Records every write operation in the project: who performed it, when, on what, and its outcome. Read
-// operations are not recorded.
-//
-// Operations performed by the platform have `actor_type` set to `platform`, with `user_id` and
-// `user_name` set to null.
-//
-// Fields such as passwords are replaced with a placeholder as the record is written and never appear
-// in `payload`.
-//
-// GET /api/v2/operation-logs
-func (UnimplementedHandler) ListOperationLogs(ctx context.Context, params ListOperationLogsParams) (r *OperationLogListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

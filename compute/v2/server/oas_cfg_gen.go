@@ -35,7 +35,6 @@ var regexMap = map[string]ogenregex.Regexp{
 	"^insvol_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                                   ogenregex.MustCompile("^insvol_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
 	"^line_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                                     ogenregex.MustCompile("^line_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
 	"^lt_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                                       ogenregex.MustCompile("^lt_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
-	"^operationlog_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                             ogenregex.MustCompile("^operationlog_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
 	"^region_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                                   ogenregex.MustCompile("^region_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
 	"^sg_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                                       ogenregex.MustCompile("^sg_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
 	"^sgrule_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                                   ogenregex.MustCompile("^sgrule_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),

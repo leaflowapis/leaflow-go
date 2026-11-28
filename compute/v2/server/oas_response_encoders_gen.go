@@ -1153,19 +1153,6 @@ func encodeGetNetworkInterfaceResponse(response *NetworkInterface, w http.Respon
 	return nil
 }
 
-func encodeGetOperationLogResponse(response *OperationLogResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
 func encodeGetPrivateImageResponse(response *PrivateImageResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -1531,19 +1518,6 @@ func encodeListLaunchTemplatesResponse(response *LaunchTemplateListResponseBody,
 }
 
 func encodeListNetworkInterfacesResponse(response *NetworkInterfaceListResponseBody, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeListOperationLogsResponse(response *OperationLogListResponseBody, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
