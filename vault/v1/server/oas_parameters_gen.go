@@ -1211,6 +1211,11 @@ type ListAPIKeysParams struct {
 	Q OptString `json:",omitempty,omitzero"`
 	// Filter by exact tag.
 	Tag OptString `json:",omitempty,omitzero"`
+	// Filter by management state (`true` for secrets with `managed_by` set, `false` for unmanaged
+	// secrets).
+	Managed OptBool `json:",omitempty,omitzero"`
+	// Filter by exact `managed_by` owner or service identifier.
+	ManagedBy OptString `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -1234,6 +1239,24 @@ func unpackListAPIKeysParams(packed middleware.Parameters) (params ListAPIKeysPa
 		}
 		if v, ok := packed[key]; ok {
 			params.Tag = v.(OptString)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "managed",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Managed = v.(OptBool)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "managed_by",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.ManagedBy = v.(OptString)
 		}
 	}
 	{
@@ -1395,6 +1418,115 @@ func decodeListAPIKeysParams(args [0]string, argsEscaped bool, r *http.Request) 
 			Err:  err,
 		}
 	}
+	// Decode query: managed.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "managed",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotManagedVal bool
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToBool(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotManagedVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Managed.SetTo(paramsDotManagedVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "managed",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: managed_by.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "managed_by",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotManagedByVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotManagedByVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.ManagedBy.SetTo(paramsDotManagedByVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.ManagedBy.Get(); ok {
+					if err := func() error {
+						if err := (validate.String{
+							MinLength:     1,
+							MinLengthSet:  true,
+							MaxLength:     64,
+							MaxLengthSet:  true,
+							Email:         false,
+							Hostname:      false,
+							Regex:         regexMap["^[a-z0-9](?:[a-z0-9._-]{0,62}[a-z0-9])?$"],
+							MinNumeric:    0,
+							MinNumericSet: false,
+							MaxNumeric:    0,
+							MaxNumericSet: false,
+						}).Validate(string(value)); err != nil {
+							return errors.Wrap(err, "string")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "managed_by",
+			In:   "query",
+			Err:  err,
+		}
+	}
 	// Set default value for query: page.
 	{
 		val := int64(1)
@@ -1547,6 +1679,11 @@ type ListBasicAuthsParams struct {
 	Q OptString `json:",omitempty,omitzero"`
 	// Filter by exact tag.
 	Tag OptString `json:",omitempty,omitzero"`
+	// Filter by management state (`true` for secrets with `managed_by` set, `false` for unmanaged
+	// secrets).
+	Managed OptBool `json:",omitempty,omitzero"`
+	// Filter by exact `managed_by` owner or service identifier.
+	ManagedBy OptString `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -1570,6 +1707,24 @@ func unpackListBasicAuthsParams(packed middleware.Parameters) (params ListBasicA
 		}
 		if v, ok := packed[key]; ok {
 			params.Tag = v.(OptString)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "managed",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Managed = v.(OptBool)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "managed_by",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.ManagedBy = v.(OptString)
 		}
 	}
 	{
@@ -1731,6 +1886,115 @@ func decodeListBasicAuthsParams(args [0]string, argsEscaped bool, r *http.Reques
 			Err:  err,
 		}
 	}
+	// Decode query: managed.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "managed",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotManagedVal bool
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToBool(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotManagedVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Managed.SetTo(paramsDotManagedVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "managed",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: managed_by.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "managed_by",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotManagedByVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotManagedByVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.ManagedBy.SetTo(paramsDotManagedByVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.ManagedBy.Get(); ok {
+					if err := func() error {
+						if err := (validate.String{
+							MinLength:     1,
+							MinLengthSet:  true,
+							MaxLength:     64,
+							MaxLengthSet:  true,
+							Email:         false,
+							Hostname:      false,
+							Regex:         regexMap["^[a-z0-9](?:[a-z0-9._-]{0,62}[a-z0-9])?$"],
+							MinNumeric:    0,
+							MinNumericSet: false,
+							MaxNumeric:    0,
+							MaxNumericSet: false,
+						}).Validate(string(value)); err != nil {
+							return errors.Wrap(err, "string")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "managed_by",
+			In:   "query",
+			Err:  err,
+		}
+	}
 	// Set default value for query: page.
 	{
 		val := int64(1)
@@ -1883,6 +2147,11 @@ type ListDockerRegistriesParams struct {
 	Q OptString `json:",omitempty,omitzero"`
 	// Filter by exact tag.
 	Tag OptString `json:",omitempty,omitzero"`
+	// Filter by management state (`true` for secrets with `managed_by` set, `false` for unmanaged
+	// secrets).
+	Managed OptBool `json:",omitempty,omitzero"`
+	// Filter by exact `managed_by` owner or service identifier.
+	ManagedBy OptString `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -1906,6 +2175,24 @@ func unpackListDockerRegistriesParams(packed middleware.Parameters) (params List
 		}
 		if v, ok := packed[key]; ok {
 			params.Tag = v.(OptString)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "managed",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Managed = v.(OptBool)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "managed_by",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.ManagedBy = v.(OptString)
 		}
 	}
 	{
@@ -2067,6 +2354,115 @@ func decodeListDockerRegistriesParams(args [0]string, argsEscaped bool, r *http.
 			Err:  err,
 		}
 	}
+	// Decode query: managed.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "managed",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotManagedVal bool
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToBool(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotManagedVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Managed.SetTo(paramsDotManagedVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "managed",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: managed_by.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "managed_by",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotManagedByVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotManagedByVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.ManagedBy.SetTo(paramsDotManagedByVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.ManagedBy.Get(); ok {
+					if err := func() error {
+						if err := (validate.String{
+							MinLength:     1,
+							MinLengthSet:  true,
+							MaxLength:     64,
+							MaxLengthSet:  true,
+							Email:         false,
+							Hostname:      false,
+							Regex:         regexMap["^[a-z0-9](?:[a-z0-9._-]{0,62}[a-z0-9])?$"],
+							MinNumeric:    0,
+							MinNumericSet: false,
+							MaxNumeric:    0,
+							MaxNumericSet: false,
+						}).Validate(string(value)); err != nil {
+							return errors.Wrap(err, "string")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "managed_by",
+			In:   "query",
+			Err:  err,
+		}
+	}
 	// Set default value for query: page.
 	{
 		val := int64(1)
@@ -2219,6 +2615,11 @@ type ListKvSecretsParams struct {
 	Q OptString `json:",omitempty,omitzero"`
 	// Filter by exact tag.
 	Tag OptString `json:",omitempty,omitzero"`
+	// Filter by management state (`true` for secrets with `managed_by` set, `false` for unmanaged
+	// secrets).
+	Managed OptBool `json:",omitempty,omitzero"`
+	// Filter by exact `managed_by` owner or service identifier.
+	ManagedBy OptString `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -2242,6 +2643,24 @@ func unpackListKvSecretsParams(packed middleware.Parameters) (params ListKvSecre
 		}
 		if v, ok := packed[key]; ok {
 			params.Tag = v.(OptString)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "managed",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Managed = v.(OptBool)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "managed_by",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.ManagedBy = v.(OptString)
 		}
 	}
 	{
@@ -2403,6 +2822,115 @@ func decodeListKvSecretsParams(args [0]string, argsEscaped bool, r *http.Request
 			Err:  err,
 		}
 	}
+	// Decode query: managed.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "managed",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotManagedVal bool
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToBool(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotManagedVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Managed.SetTo(paramsDotManagedVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "managed",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: managed_by.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "managed_by",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotManagedByVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotManagedByVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.ManagedBy.SetTo(paramsDotManagedByVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.ManagedBy.Get(); ok {
+					if err := func() error {
+						if err := (validate.String{
+							MinLength:     1,
+							MinLengthSet:  true,
+							MaxLength:     64,
+							MaxLengthSet:  true,
+							Email:         false,
+							Hostname:      false,
+							Regex:         regexMap["^[a-z0-9](?:[a-z0-9._-]{0,62}[a-z0-9])?$"],
+							MinNumeric:    0,
+							MinNumericSet: false,
+							MaxNumeric:    0,
+							MaxNumericSet: false,
+						}).Validate(string(value)); err != nil {
+							return errors.Wrap(err, "string")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "managed_by",
+			In:   "query",
+			Err:  err,
+		}
+	}
 	// Set default value for query: page.
 	{
 		val := int64(1)
@@ -2555,6 +3083,11 @@ type ListLoginsParams struct {
 	Q OptString `json:",omitempty,omitzero"`
 	// Filter by exact tag.
 	Tag OptString `json:",omitempty,omitzero"`
+	// Filter by management state (`true` for secrets with `managed_by` set, `false` for unmanaged
+	// secrets).
+	Managed OptBool `json:",omitempty,omitzero"`
+	// Filter by exact `managed_by` owner or service identifier.
+	ManagedBy OptString `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -2578,6 +3111,24 @@ func unpackListLoginsParams(packed middleware.Parameters) (params ListLoginsPara
 		}
 		if v, ok := packed[key]; ok {
 			params.Tag = v.(OptString)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "managed",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Managed = v.(OptBool)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "managed_by",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.ManagedBy = v.(OptString)
 		}
 	}
 	{
@@ -2739,6 +3290,115 @@ func decodeListLoginsParams(args [0]string, argsEscaped bool, r *http.Request) (
 			Err:  err,
 		}
 	}
+	// Decode query: managed.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "managed",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotManagedVal bool
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToBool(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotManagedVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Managed.SetTo(paramsDotManagedVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "managed",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: managed_by.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "managed_by",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotManagedByVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotManagedByVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.ManagedBy.SetTo(paramsDotManagedByVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.ManagedBy.Get(); ok {
+					if err := func() error {
+						if err := (validate.String{
+							MinLength:     1,
+							MinLengthSet:  true,
+							MaxLength:     64,
+							MaxLengthSet:  true,
+							Email:         false,
+							Hostname:      false,
+							Regex:         regexMap["^[a-z0-9](?:[a-z0-9._-]{0,62}[a-z0-9])?$"],
+							MinNumeric:    0,
+							MinNumericSet: false,
+							MaxNumeric:    0,
+							MaxNumericSet: false,
+						}).Validate(string(value)); err != nil {
+							return errors.Wrap(err, "string")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "managed_by",
+			In:   "query",
+			Err:  err,
+		}
+	}
 	// Set default value for query: page.
 	{
 		val := int64(1)
@@ -2891,6 +3551,11 @@ type ListSSHKeysParams struct {
 	Q OptString `json:",omitempty,omitzero"`
 	// Filter by exact tag.
 	Tag OptString `json:",omitempty,omitzero"`
+	// Filter by management state (`true` for secrets with `managed_by` set, `false` for unmanaged
+	// secrets).
+	Managed OptBool `json:",omitempty,omitzero"`
+	// Filter by exact `managed_by` owner or service identifier.
+	ManagedBy OptString `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -2914,6 +3579,24 @@ func unpackListSSHKeysParams(packed middleware.Parameters) (params ListSSHKeysPa
 		}
 		if v, ok := packed[key]; ok {
 			params.Tag = v.(OptString)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "managed",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Managed = v.(OptBool)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "managed_by",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.ManagedBy = v.(OptString)
 		}
 	}
 	{
@@ -3075,6 +3758,115 @@ func decodeListSSHKeysParams(args [0]string, argsEscaped bool, r *http.Request) 
 			Err:  err,
 		}
 	}
+	// Decode query: managed.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "managed",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotManagedVal bool
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToBool(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotManagedVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Managed.SetTo(paramsDotManagedVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "managed",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: managed_by.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "managed_by",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotManagedByVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotManagedByVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.ManagedBy.SetTo(paramsDotManagedByVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.ManagedBy.Get(); ok {
+					if err := func() error {
+						if err := (validate.String{
+							MinLength:     1,
+							MinLengthSet:  true,
+							MaxLength:     64,
+							MaxLengthSet:  true,
+							Email:         false,
+							Hostname:      false,
+							Regex:         regexMap["^[a-z0-9](?:[a-z0-9._-]{0,62}[a-z0-9])?$"],
+							MinNumeric:    0,
+							MinNumericSet: false,
+							MaxNumeric:    0,
+							MaxNumericSet: false,
+						}).Validate(string(value)); err != nil {
+							return errors.Wrap(err, "string")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "managed_by",
+			In:   "query",
+			Err:  err,
+		}
+	}
 	// Set default value for query: page.
 	{
 		val := int64(1)
@@ -3229,6 +4021,11 @@ type ListSecretsParams struct {
 	Type OptSecretType `json:",omitempty,omitzero"`
 	// Filter by exact tag.
 	Tag OptString `json:",omitempty,omitzero"`
+	// Filter by management state (`true` for secrets with `managed_by` set, `false` for unmanaged
+	// secrets).
+	Managed OptBool `json:",omitempty,omitzero"`
+	// Filter by exact `managed_by` owner or service identifier.
+	ManagedBy OptString `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -3261,6 +4058,24 @@ func unpackListSecretsParams(packed middleware.Parameters) (params ListSecretsPa
 		}
 		if v, ok := packed[key]; ok {
 			params.Tag = v.(OptString)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "managed",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Managed = v.(OptBool)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "managed_by",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.ManagedBy = v.(OptString)
 		}
 	}
 	{
@@ -3478,6 +4293,115 @@ func decodeListSecretsParams(args [0]string, argsEscaped bool, r *http.Request) 
 			Err:  err,
 		}
 	}
+	// Decode query: managed.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "managed",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotManagedVal bool
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToBool(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotManagedVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Managed.SetTo(paramsDotManagedVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "managed",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: managed_by.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "managed_by",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotManagedByVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotManagedByVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.ManagedBy.SetTo(paramsDotManagedByVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.ManagedBy.Get(); ok {
+					if err := func() error {
+						if err := (validate.String{
+							MinLength:     1,
+							MinLengthSet:  true,
+							MaxLength:     64,
+							MaxLengthSet:  true,
+							Email:         false,
+							Hostname:      false,
+							Regex:         regexMap["^[a-z0-9](?:[a-z0-9._-]{0,62}[a-z0-9])?$"],
+							MinNumeric:    0,
+							MinNumericSet: false,
+							MaxNumeric:    0,
+							MaxNumericSet: false,
+						}).Validate(string(value)); err != nil {
+							return errors.Wrap(err, "string")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "managed_by",
+			In:   "query",
+			Err:  err,
+		}
+	}
 	// Set default value for query: page.
 	{
 		val := int64(1)
@@ -3630,6 +4554,11 @@ type ListSecureNotesParams struct {
 	Q OptString `json:",omitempty,omitzero"`
 	// Filter by exact tag.
 	Tag OptString `json:",omitempty,omitzero"`
+	// Filter by management state (`true` for secrets with `managed_by` set, `false` for unmanaged
+	// secrets).
+	Managed OptBool `json:",omitempty,omitzero"`
+	// Filter by exact `managed_by` owner or service identifier.
+	ManagedBy OptString `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -3653,6 +4582,24 @@ func unpackListSecureNotesParams(packed middleware.Parameters) (params ListSecur
 		}
 		if v, ok := packed[key]; ok {
 			params.Tag = v.(OptString)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "managed",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Managed = v.(OptBool)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "managed_by",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.ManagedBy = v.(OptString)
 		}
 	}
 	{
@@ -3814,6 +4761,115 @@ func decodeListSecureNotesParams(args [0]string, argsEscaped bool, r *http.Reque
 			Err:  err,
 		}
 	}
+	// Decode query: managed.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "managed",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotManagedVal bool
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToBool(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotManagedVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Managed.SetTo(paramsDotManagedVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "managed",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: managed_by.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "managed_by",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotManagedByVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotManagedByVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.ManagedBy.SetTo(paramsDotManagedByVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.ManagedBy.Get(); ok {
+					if err := func() error {
+						if err := (validate.String{
+							MinLength:     1,
+							MinLengthSet:  true,
+							MaxLength:     64,
+							MaxLengthSet:  true,
+							Email:         false,
+							Hostname:      false,
+							Regex:         regexMap["^[a-z0-9](?:[a-z0-9._-]{0,62}[a-z0-9])?$"],
+							MinNumeric:    0,
+							MinNumericSet: false,
+							MaxNumeric:    0,
+							MaxNumericSet: false,
+						}).Validate(string(value)); err != nil {
+							return errors.Wrap(err, "string")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "managed_by",
+			In:   "query",
+			Err:  err,
+		}
+	}
 	// Set default value for query: page.
 	{
 		val := int64(1)
@@ -3966,6 +5022,11 @@ type ListTLSCertificatesParams struct {
 	Q OptString `json:",omitempty,omitzero"`
 	// Filter by exact tag.
 	Tag OptString `json:",omitempty,omitzero"`
+	// Filter by management state (`true` for secrets with `managed_by` set, `false` for unmanaged
+	// secrets).
+	Managed OptBool `json:",omitempty,omitzero"`
+	// Filter by exact `managed_by` owner or service identifier.
+	ManagedBy OptString `json:",omitempty,omitzero"`
 	// Return only certificates whose `not_after` is at or before this timestamp.
 	ExpiringBefore OptDateTime `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
@@ -3991,6 +5052,24 @@ func unpackListTLSCertificatesParams(packed middleware.Parameters) (params ListT
 		}
 		if v, ok := packed[key]; ok {
 			params.Tag = v.(OptString)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "managed",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Managed = v.(OptBool)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "managed_by",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.ManagedBy = v.(OptString)
 		}
 	}
 	{
@@ -4157,6 +5236,115 @@ func decodeListTLSCertificatesParams(args [0]string, argsEscaped bool, r *http.R
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "tag",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: managed.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "managed",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotManagedVal bool
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToBool(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotManagedVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Managed.SetTo(paramsDotManagedVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "managed",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: managed_by.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "managed_by",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotManagedByVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotManagedByVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.ManagedBy.SetTo(paramsDotManagedByVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.ManagedBy.Get(); ok {
+					if err := func() error {
+						if err := (validate.String{
+							MinLength:     1,
+							MinLengthSet:  true,
+							MaxLength:     64,
+							MaxLengthSet:  true,
+							Email:         false,
+							Hostname:      false,
+							Regex:         regexMap["^[a-z0-9](?:[a-z0-9._-]{0,62}[a-z0-9])?$"],
+							MinNumeric:    0,
+							MinNumericSet: false,
+							MaxNumeric:    0,
+							MaxNumericSet: false,
+						}).Validate(string(value)); err != nil {
+							return errors.Wrap(err, "string")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "managed_by",
 			In:   "query",
 			Err:  err,
 		}

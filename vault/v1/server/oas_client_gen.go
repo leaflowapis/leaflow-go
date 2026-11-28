@@ -3831,6 +3831,40 @@ func (c *Client) sendListAPIKeys(ctx context.Context, params ListAPIKeysParams) 
 		}
 	}
 	{
+		// Encode "managed" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "managed",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Managed.Get(); ok {
+				return e.EncodeValue(conv.BoolToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "managed_by" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "managed_by",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.ManagedBy.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
 		// Encode "page" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "page",
@@ -4008,6 +4042,40 @@ func (c *Client) sendListBasicAuths(ctx context.Context, params ListBasicAuthsPa
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
 			if val, ok := params.Tag.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "managed" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "managed",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Managed.Get(); ok {
+				return e.EncodeValue(conv.BoolToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "managed_by" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "managed_by",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.ManagedBy.Get(); ok {
 				return e.EncodeValue(conv.StringToString(val))
 			}
 			return nil
@@ -4201,6 +4269,40 @@ func (c *Client) sendListDockerRegistries(ctx context.Context, params ListDocker
 		}
 	}
 	{
+		// Encode "managed" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "managed",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Managed.Get(); ok {
+				return e.EncodeValue(conv.BoolToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "managed_by" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "managed_by",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.ManagedBy.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
 		// Encode "page" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "page",
@@ -4378,6 +4480,40 @@ func (c *Client) sendListKvSecrets(ctx context.Context, params ListKvSecretsPara
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
 			if val, ok := params.Tag.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "managed" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "managed",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Managed.Get(); ok {
+				return e.EncodeValue(conv.BoolToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "managed_by" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "managed_by",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.ManagedBy.Get(); ok {
 				return e.EncodeValue(conv.StringToString(val))
 			}
 			return nil
@@ -4571,6 +4707,40 @@ func (c *Client) sendListLogins(ctx context.Context, params ListLoginsParams) (r
 		}
 	}
 	{
+		// Encode "managed" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "managed",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Managed.Get(); ok {
+				return e.EncodeValue(conv.BoolToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "managed_by" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "managed_by",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.ManagedBy.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
 		// Encode "page" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "page",
@@ -4748,6 +4918,40 @@ func (c *Client) sendListSSHKeys(ctx context.Context, params ListSSHKeysParams) 
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
 			if val, ok := params.Tag.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "managed" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "managed",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Managed.Get(); ok {
+				return e.EncodeValue(conv.BoolToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "managed_by" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "managed_by",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.ManagedBy.Get(); ok {
 				return e.EncodeValue(conv.StringToString(val))
 			}
 			return nil
@@ -4958,6 +5162,40 @@ func (c *Client) sendListSecrets(ctx context.Context, params ListSecretsParams) 
 		}
 	}
 	{
+		// Encode "managed" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "managed",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Managed.Get(); ok {
+				return e.EncodeValue(conv.BoolToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "managed_by" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "managed_by",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.ManagedBy.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
 		// Encode "page" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "page",
@@ -5143,6 +5381,40 @@ func (c *Client) sendListSecureNotes(ctx context.Context, params ListSecureNotes
 		}
 	}
 	{
+		// Encode "managed" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "managed",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Managed.Get(); ok {
+				return e.EncodeValue(conv.BoolToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "managed_by" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "managed_by",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.ManagedBy.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
 		// Encode "page" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "page",
@@ -5320,6 +5592,40 @@ func (c *Client) sendListTLSCertificates(ctx context.Context, params ListTLSCert
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
 			if val, ok := params.Tag.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "managed" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "managed",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Managed.Get(); ok {
+				return e.EncodeValue(conv.BoolToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "managed_by" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "managed_by",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.ManagedBy.Get(); ok {
 				return e.EncodeValue(conv.StringToString(val))
 			}
 			return nil

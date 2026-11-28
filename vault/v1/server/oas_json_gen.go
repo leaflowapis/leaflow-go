@@ -244,6 +244,14 @@ func (s *ApiKeySecretResource) encodeFields(e *jx.Encoder) {
 		e.Str(s.CreatedBy)
 	}
 	{
+		e.FieldStart("managed_by")
+		s.ManagedBy.Encode(e)
+	}
+	{
+		e.FieldStart("managed_resource_id")
+		s.ManagedResourceID.Encode(e)
+	}
+	{
 		e.FieldStart("created_at")
 		json.EncodeDateTime(e, s.CreatedAt)
 	}
@@ -253,7 +261,7 @@ func (s *ApiKeySecretResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfApiKeySecretResource = [16]string{
+var jsonFieldsNameOfApiKeySecretResource = [18]string{
 	0:  "id",
 	1:  "slug",
 	2:  "name",
@@ -268,8 +276,10 @@ var jsonFieldsNameOfApiKeySecretResource = [16]string{
 	11: "expires_at",
 	12: "last_used_at",
 	13: "created_by",
-	14: "created_at",
-	15: "updated_at",
+	14: "managed_by",
+	15: "managed_resource_id",
+	16: "created_at",
+	17: "updated_at",
 }
 
 // Decode decodes ApiKeySecretResource from json.
@@ -277,7 +287,7 @@ func (s *ApiKeySecretResource) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode ApiKeySecretResource to nil")
 	}
-	var requiredBitSet [2]uint8
+	var requiredBitSet [3]uint8
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
@@ -459,8 +469,28 @@ func (s *ApiKeySecretResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"created_by\"")
 			}
-		case "created_at":
+		case "managed_by":
 			requiredBitSet[1] |= 1 << 6
+			if err := func() error {
+				if err := s.ManagedBy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_by\"")
+			}
+		case "managed_resource_id":
+			requiredBitSet[1] |= 1 << 7
+			if err := func() error {
+				if err := s.ManagedResourceID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_resource_id\"")
+			}
+		case "created_at":
+			requiredBitSet[2] |= 1 << 0
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -472,7 +502,7 @@ func (s *ApiKeySecretResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"created_at\"")
 			}
 		case "updated_at":
-			requiredBitSet[1] |= 1 << 7
+			requiredBitSet[2] |= 1 << 1
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.UpdatedAt = v
@@ -492,9 +522,10 @@ func (s *ApiKeySecretResource) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [2]uint8{
+	for i, mask := range [3]uint8{
 		0b11111111,
 		0b11111111,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -759,6 +790,14 @@ func (s *BasicAuthSecretResource) encodeFields(e *jx.Encoder) {
 		e.Str(s.CreatedBy)
 	}
 	{
+		e.FieldStart("managed_by")
+		s.ManagedBy.Encode(e)
+	}
+	{
+		e.FieldStart("managed_resource_id")
+		s.ManagedResourceID.Encode(e)
+	}
+	{
 		e.FieldStart("created_at")
 		json.EncodeDateTime(e, s.CreatedAt)
 	}
@@ -768,7 +807,7 @@ func (s *BasicAuthSecretResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfBasicAuthSecretResource = [14]string{
+var jsonFieldsNameOfBasicAuthSecretResource = [16]string{
 	0:  "id",
 	1:  "slug",
 	2:  "name",
@@ -781,8 +820,10 @@ var jsonFieldsNameOfBasicAuthSecretResource = [14]string{
 	9:  "expires_at",
 	10: "last_used_at",
 	11: "created_by",
-	12: "created_at",
-	13: "updated_at",
+	12: "managed_by",
+	13: "managed_resource_id",
+	14: "created_at",
+	15: "updated_at",
 }
 
 // Decode decodes BasicAuthSecretResource from json.
@@ -940,8 +981,28 @@ func (s *BasicAuthSecretResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"created_by\"")
 			}
-		case "created_at":
+		case "managed_by":
 			requiredBitSet[1] |= 1 << 4
+			if err := func() error {
+				if err := s.ManagedBy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_by\"")
+			}
+		case "managed_resource_id":
+			requiredBitSet[1] |= 1 << 5
+			if err := func() error {
+				if err := s.ManagedResourceID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_resource_id\"")
+			}
+		case "created_at":
+			requiredBitSet[1] |= 1 << 6
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -953,7 +1014,7 @@ func (s *BasicAuthSecretResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"created_at\"")
 			}
 		case "updated_at":
-			requiredBitSet[1] |= 1 << 5
+			requiredBitSet[1] |= 1 << 7
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.UpdatedAt = v
@@ -975,7 +1036,7 @@ func (s *BasicAuthSecretResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00111111,
+		0b11111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -1057,6 +1118,18 @@ func (s *CreateApiKeyRequest) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.ManagedBy.Set {
+			e.FieldStart("managed_by")
+			s.ManagedBy.Encode(e)
+		}
+	}
+	{
+		if s.ManagedResourceID.Set {
+			e.FieldStart("managed_resource_id")
+			s.ManagedResourceID.Encode(e)
+		}
+	}
+	{
 		if s.Revealable.Set {
 			e.FieldStart("revealable")
 			s.Revealable.Encode(e)
@@ -1088,16 +1161,18 @@ func (s *CreateApiKeyRequest) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCreateApiKeyRequest = [9]string{
-	0: "slug",
-	1: "name",
-	2: "description",
-	3: "tags",
-	4: "revealable",
-	5: "expires_at",
-	6: "provider",
-	7: "token",
-	8: "fields",
+var jsonFieldsNameOfCreateApiKeyRequest = [11]string{
+	0:  "slug",
+	1:  "name",
+	2:  "description",
+	3:  "tags",
+	4:  "managed_by",
+	5:  "managed_resource_id",
+	6:  "revealable",
+	7:  "expires_at",
+	8:  "provider",
+	9:  "token",
+	10: "fields",
 }
 
 // Decode decodes CreateApiKeyRequest from json.
@@ -1160,6 +1235,26 @@ func (s *CreateApiKeyRequest) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"tags\"")
+			}
+		case "managed_by":
+			if err := func() error {
+				s.ManagedBy.Reset()
+				if err := s.ManagedBy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_by\"")
+			}
+		case "managed_resource_id":
+			if err := func() error {
+				s.ManagedResourceID.Reset()
+				if err := s.ManagedResourceID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_resource_id\"")
 			}
 		case "revealable":
 			if err := func() error {
@@ -1360,6 +1455,18 @@ func (s *CreateBasicAuthRequest) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.ManagedBy.Set {
+			e.FieldStart("managed_by")
+			s.ManagedBy.Encode(e)
+		}
+	}
+	{
+		if s.ManagedResourceID.Set {
+			e.FieldStart("managed_resource_id")
+			s.ManagedResourceID.Encode(e)
+		}
+	}
+	{
 		if s.Revealable.Set {
 			e.FieldStart("revealable")
 			s.Revealable.Encode(e)
@@ -1381,15 +1488,17 @@ func (s *CreateBasicAuthRequest) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCreateBasicAuthRequest = [8]string{
+var jsonFieldsNameOfCreateBasicAuthRequest = [10]string{
 	0: "slug",
 	1: "name",
 	2: "description",
 	3: "tags",
-	4: "revealable",
-	5: "expires_at",
-	6: "username",
-	7: "password",
+	4: "managed_by",
+	5: "managed_resource_id",
+	6: "revealable",
+	7: "expires_at",
+	8: "username",
+	9: "password",
 }
 
 // Decode decodes CreateBasicAuthRequest from json.
@@ -1397,7 +1506,7 @@ func (s *CreateBasicAuthRequest) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode CreateBasicAuthRequest to nil")
 	}
-	var requiredBitSet [1]uint8
+	var requiredBitSet [2]uint8
 	s.setDefaults()
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
@@ -1453,6 +1562,26 @@ func (s *CreateBasicAuthRequest) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"tags\"")
 			}
+		case "managed_by":
+			if err := func() error {
+				s.ManagedBy.Reset()
+				if err := s.ManagedBy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_by\"")
+			}
+		case "managed_resource_id":
+			if err := func() error {
+				s.ManagedResourceID.Reset()
+				if err := s.ManagedResourceID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_resource_id\"")
+			}
 		case "revealable":
 			if err := func() error {
 				s.Revealable.Reset()
@@ -1474,7 +1603,7 @@ func (s *CreateBasicAuthRequest) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"expires_at\"")
 			}
 		case "username":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				v, err := d.Str()
 				s.Username = string(v)
@@ -1486,7 +1615,7 @@ func (s *CreateBasicAuthRequest) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"username\"")
 			}
 		case "password":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				v, err := d.Str()
 				s.Password = string(v)
@@ -1506,8 +1635,9 @@ func (s *CreateBasicAuthRequest) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [1]uint8{
-		0b11000010,
+	for i, mask := range [2]uint8{
+		0b00000010,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -1589,6 +1719,18 @@ func (s *CreateDockerRegistryRequest) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.ManagedBy.Set {
+			e.FieldStart("managed_by")
+			s.ManagedBy.Encode(e)
+		}
+	}
+	{
+		if s.ManagedResourceID.Set {
+			e.FieldStart("managed_resource_id")
+			s.ManagedResourceID.Encode(e)
+		}
+	}
+	{
 		if s.Revealable.Set {
 			e.FieldStart("revealable")
 			s.Revealable.Encode(e)
@@ -1620,17 +1762,19 @@ func (s *CreateDockerRegistryRequest) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCreateDockerRegistryRequest = [10]string{
-	0: "slug",
-	1: "name",
-	2: "description",
-	3: "tags",
-	4: "revealable",
-	5: "expires_at",
-	6: "server",
-	7: "username",
-	8: "password",
-	9: "email",
+var jsonFieldsNameOfCreateDockerRegistryRequest = [12]string{
+	0:  "slug",
+	1:  "name",
+	2:  "description",
+	3:  "tags",
+	4:  "managed_by",
+	5:  "managed_resource_id",
+	6:  "revealable",
+	7:  "expires_at",
+	8:  "server",
+	9:  "username",
+	10: "password",
+	11: "email",
 }
 
 // Decode decodes CreateDockerRegistryRequest from json.
@@ -1694,6 +1838,26 @@ func (s *CreateDockerRegistryRequest) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"tags\"")
 			}
+		case "managed_by":
+			if err := func() error {
+				s.ManagedBy.Reset()
+				if err := s.ManagedBy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_by\"")
+			}
+		case "managed_resource_id":
+			if err := func() error {
+				s.ManagedResourceID.Reset()
+				if err := s.ManagedResourceID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_resource_id\"")
+			}
 		case "revealable":
 			if err := func() error {
 				s.Revealable.Reset()
@@ -1715,7 +1879,7 @@ func (s *CreateDockerRegistryRequest) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"expires_at\"")
 			}
 		case "server":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				v, err := d.Str()
 				s.Server = string(v)
@@ -1727,7 +1891,7 @@ func (s *CreateDockerRegistryRequest) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"server\"")
 			}
 		case "username":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				v, err := d.Str()
 				s.Username = string(v)
@@ -1739,7 +1903,7 @@ func (s *CreateDockerRegistryRequest) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"username\"")
 			}
 		case "password":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				v, err := d.Str()
 				s.Password = string(v)
@@ -1770,8 +1934,8 @@ func (s *CreateDockerRegistryRequest) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
-		0b11000010,
-		0b00000001,
+		0b00000010,
+		0b00000111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -1853,6 +2017,18 @@ func (s *CreateKvSecretRequest) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.ManagedBy.Set {
+			e.FieldStart("managed_by")
+			s.ManagedBy.Encode(e)
+		}
+	}
+	{
+		if s.ManagedResourceID.Set {
+			e.FieldStart("managed_resource_id")
+			s.ManagedResourceID.Encode(e)
+		}
+	}
+	{
 		if s.Revealable.Set {
 			e.FieldStart("revealable")
 			s.Revealable.Encode(e)
@@ -1870,14 +2046,16 @@ func (s *CreateKvSecretRequest) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCreateKvSecretRequest = [7]string{
+var jsonFieldsNameOfCreateKvSecretRequest = [9]string{
 	0: "slug",
 	1: "name",
 	2: "description",
 	3: "tags",
-	4: "revealable",
-	5: "expires_at",
-	6: "data",
+	4: "managed_by",
+	5: "managed_resource_id",
+	6: "revealable",
+	7: "expires_at",
+	8: "data",
 }
 
 // Decode decodes CreateKvSecretRequest from json.
@@ -1885,7 +2063,7 @@ func (s *CreateKvSecretRequest) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode CreateKvSecretRequest to nil")
 	}
-	var requiredBitSet [1]uint8
+	var requiredBitSet [2]uint8
 	s.setDefaults()
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
@@ -1941,6 +2119,26 @@ func (s *CreateKvSecretRequest) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"tags\"")
 			}
+		case "managed_by":
+			if err := func() error {
+				s.ManagedBy.Reset()
+				if err := s.ManagedBy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_by\"")
+			}
+		case "managed_resource_id":
+			if err := func() error {
+				s.ManagedResourceID.Reset()
+				if err := s.ManagedResourceID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_resource_id\"")
+			}
 		case "revealable":
 			if err := func() error {
 				s.Revealable.Reset()
@@ -1962,7 +2160,7 @@ func (s *CreateKvSecretRequest) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"expires_at\"")
 			}
 		case "data":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				if err := s.Data.Decode(d); err != nil {
 					return err
@@ -1980,8 +2178,9 @@ func (s *CreateKvSecretRequest) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [1]uint8{
-		0b01000010,
+	for i, mask := range [2]uint8{
+		0b00000010,
+		0b00000001,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -2130,6 +2329,18 @@ func (s *CreateLoginRequest) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.ManagedBy.Set {
+			e.FieldStart("managed_by")
+			s.ManagedBy.Encode(e)
+		}
+	}
+	{
+		if s.ManagedResourceID.Set {
+			e.FieldStart("managed_resource_id")
+			s.ManagedResourceID.Encode(e)
+		}
+	}
+	{
 		if s.Revealable.Set {
 			e.FieldStart("revealable")
 			s.Revealable.Encode(e)
@@ -2177,18 +2388,20 @@ func (s *CreateLoginRequest) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCreateLoginRequest = [11]string{
+var jsonFieldsNameOfCreateLoginRequest = [13]string{
 	0:  "slug",
 	1:  "name",
 	2:  "description",
 	3:  "tags",
-	4:  "revealable",
-	5:  "expires_at",
-	6:  "username",
-	7:  "password",
-	8:  "totp",
-	9:  "uris",
-	10: "fields",
+	4:  "managed_by",
+	5:  "managed_resource_id",
+	6:  "revealable",
+	7:  "expires_at",
+	8:  "username",
+	9:  "password",
+	10: "totp",
+	11: "uris",
+	12: "fields",
 }
 
 // Decode decodes CreateLoginRequest from json.
@@ -2251,6 +2464,26 @@ func (s *CreateLoginRequest) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"tags\"")
+			}
+		case "managed_by":
+			if err := func() error {
+				s.ManagedBy.Reset()
+				if err := s.ManagedBy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_by\"")
+			}
+		case "managed_resource_id":
+			if err := func() error {
+				s.ManagedResourceID.Reset()
+				if err := s.ManagedResourceID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_resource_id\"")
 			}
 		case "revealable":
 			if err := func() error {
@@ -2480,6 +2713,18 @@ func (s *CreateSecureNoteRequest) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.ManagedBy.Set {
+			e.FieldStart("managed_by")
+			s.ManagedBy.Encode(e)
+		}
+	}
+	{
+		if s.ManagedResourceID.Set {
+			e.FieldStart("managed_resource_id")
+			s.ManagedResourceID.Encode(e)
+		}
+	}
+	{
 		if s.Revealable.Set {
 			e.FieldStart("revealable")
 			s.Revealable.Encode(e)
@@ -2497,14 +2742,16 @@ func (s *CreateSecureNoteRequest) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCreateSecureNoteRequest = [7]string{
+var jsonFieldsNameOfCreateSecureNoteRequest = [9]string{
 	0: "slug",
 	1: "name",
 	2: "description",
 	3: "tags",
-	4: "revealable",
-	5: "expires_at",
-	6: "content",
+	4: "managed_by",
+	5: "managed_resource_id",
+	6: "revealable",
+	7: "expires_at",
+	8: "content",
 }
 
 // Decode decodes CreateSecureNoteRequest from json.
@@ -2512,7 +2759,7 @@ func (s *CreateSecureNoteRequest) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode CreateSecureNoteRequest to nil")
 	}
-	var requiredBitSet [1]uint8
+	var requiredBitSet [2]uint8
 	s.setDefaults()
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
@@ -2568,6 +2815,26 @@ func (s *CreateSecureNoteRequest) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"tags\"")
 			}
+		case "managed_by":
+			if err := func() error {
+				s.ManagedBy.Reset()
+				if err := s.ManagedBy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_by\"")
+			}
+		case "managed_resource_id":
+			if err := func() error {
+				s.ManagedResourceID.Reset()
+				if err := s.ManagedResourceID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_resource_id\"")
+			}
 		case "revealable":
 			if err := func() error {
 				s.Revealable.Reset()
@@ -2589,7 +2856,7 @@ func (s *CreateSecureNoteRequest) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"expires_at\"")
 			}
 		case "content":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				v, err := d.Str()
 				s.Content = string(v)
@@ -2609,8 +2876,9 @@ func (s *CreateSecureNoteRequest) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [1]uint8{
-		0b01000010,
+	for i, mask := range [2]uint8{
+		0b00000010,
+		0b00000001,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -2692,6 +2960,18 @@ func (s *CreateSshKeyRequest) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.ManagedBy.Set {
+			e.FieldStart("managed_by")
+			s.ManagedBy.Encode(e)
+		}
+	}
+	{
+		if s.ManagedResourceID.Set {
+			e.FieldStart("managed_resource_id")
+			s.ManagedResourceID.Encode(e)
+		}
+	}
+	{
 		if s.Revealable.Set {
 			e.FieldStart("revealable")
 			s.Revealable.Encode(e)
@@ -2715,15 +2995,17 @@ func (s *CreateSshKeyRequest) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCreateSshKeyRequest = [8]string{
+var jsonFieldsNameOfCreateSshKeyRequest = [10]string{
 	0: "slug",
 	1: "name",
 	2: "description",
 	3: "tags",
-	4: "revealable",
-	5: "expires_at",
-	6: "private_key",
-	7: "passphrase",
+	4: "managed_by",
+	5: "managed_resource_id",
+	6: "revealable",
+	7: "expires_at",
+	8: "private_key",
+	9: "passphrase",
 }
 
 // Decode decodes CreateSshKeyRequest from json.
@@ -2731,7 +3013,7 @@ func (s *CreateSshKeyRequest) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode CreateSshKeyRequest to nil")
 	}
-	var requiredBitSet [1]uint8
+	var requiredBitSet [2]uint8
 	s.setDefaults()
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
@@ -2787,6 +3069,26 @@ func (s *CreateSshKeyRequest) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"tags\"")
 			}
+		case "managed_by":
+			if err := func() error {
+				s.ManagedBy.Reset()
+				if err := s.ManagedBy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_by\"")
+			}
+		case "managed_resource_id":
+			if err := func() error {
+				s.ManagedResourceID.Reset()
+				if err := s.ManagedResourceID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_resource_id\"")
+			}
 		case "revealable":
 			if err := func() error {
 				s.Revealable.Reset()
@@ -2808,7 +3110,7 @@ func (s *CreateSshKeyRequest) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"expires_at\"")
 			}
 		case "private_key":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				v, err := d.Str()
 				s.PrivateKey = string(v)
@@ -2838,8 +3140,9 @@ func (s *CreateSshKeyRequest) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [1]uint8{
-		0b01000010,
+	for i, mask := range [2]uint8{
+		0b00000010,
+		0b00000001,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -2921,6 +3224,18 @@ func (s *CreateTlsCertificateRequest) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.ManagedBy.Set {
+			e.FieldStart("managed_by")
+			s.ManagedBy.Encode(e)
+		}
+	}
+	{
+		if s.ManagedResourceID.Set {
+			e.FieldStart("managed_resource_id")
+			s.ManagedResourceID.Encode(e)
+		}
+	}
+	{
 		if s.Revealable.Set {
 			e.FieldStart("revealable")
 			s.Revealable.Encode(e)
@@ -2948,16 +3263,18 @@ func (s *CreateTlsCertificateRequest) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCreateTlsCertificateRequest = [9]string{
-	0: "slug",
-	1: "name",
-	2: "description",
-	3: "tags",
-	4: "revealable",
-	5: "expires_at",
-	6: "certificate",
-	7: "private_key",
-	8: "ca_certificate",
+var jsonFieldsNameOfCreateTlsCertificateRequest = [11]string{
+	0:  "slug",
+	1:  "name",
+	2:  "description",
+	3:  "tags",
+	4:  "managed_by",
+	5:  "managed_resource_id",
+	6:  "revealable",
+	7:  "expires_at",
+	8:  "certificate",
+	9:  "private_key",
+	10: "ca_certificate",
 }
 
 // Decode decodes CreateTlsCertificateRequest from json.
@@ -3021,6 +3338,26 @@ func (s *CreateTlsCertificateRequest) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"tags\"")
 			}
+		case "managed_by":
+			if err := func() error {
+				s.ManagedBy.Reset()
+				if err := s.ManagedBy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_by\"")
+			}
+		case "managed_resource_id":
+			if err := func() error {
+				s.ManagedResourceID.Reset()
+				if err := s.ManagedResourceID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_resource_id\"")
+			}
 		case "revealable":
 			if err := func() error {
 				s.Revealable.Reset()
@@ -3042,7 +3379,7 @@ func (s *CreateTlsCertificateRequest) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"expires_at\"")
 			}
 		case "certificate":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				v, err := d.Str()
 				s.Certificate = string(v)
@@ -3054,7 +3391,7 @@ func (s *CreateTlsCertificateRequest) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"certificate\"")
 			}
 		case "private_key":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				v, err := d.Str()
 				s.PrivateKey = string(v)
@@ -3085,8 +3422,8 @@ func (s *CreateTlsCertificateRequest) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
-		0b11000010,
-		0b00000000,
+		0b00000010,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -3359,6 +3696,14 @@ func (s *DockerRegistrySecretResource) encodeFields(e *jx.Encoder) {
 		e.Str(s.CreatedBy)
 	}
 	{
+		e.FieldStart("managed_by")
+		s.ManagedBy.Encode(e)
+	}
+	{
+		e.FieldStart("managed_resource_id")
+		s.ManagedResourceID.Encode(e)
+	}
+	{
 		e.FieldStart("created_at")
 		json.EncodeDateTime(e, s.CreatedAt)
 	}
@@ -3368,7 +3713,7 @@ func (s *DockerRegistrySecretResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfDockerRegistrySecretResource = [16]string{
+var jsonFieldsNameOfDockerRegistrySecretResource = [18]string{
 	0:  "id",
 	1:  "slug",
 	2:  "name",
@@ -3383,8 +3728,10 @@ var jsonFieldsNameOfDockerRegistrySecretResource = [16]string{
 	11: "expires_at",
 	12: "last_used_at",
 	13: "created_by",
-	14: "created_at",
-	15: "updated_at",
+	14: "managed_by",
+	15: "managed_resource_id",
+	16: "created_at",
+	17: "updated_at",
 }
 
 // Decode decodes DockerRegistrySecretResource from json.
@@ -3392,7 +3739,7 @@ func (s *DockerRegistrySecretResource) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode DockerRegistrySecretResource to nil")
 	}
-	var requiredBitSet [2]uint8
+	var requiredBitSet [3]uint8
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
@@ -3566,8 +3913,28 @@ func (s *DockerRegistrySecretResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"created_by\"")
 			}
-		case "created_at":
+		case "managed_by":
 			requiredBitSet[1] |= 1 << 6
+			if err := func() error {
+				if err := s.ManagedBy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_by\"")
+			}
+		case "managed_resource_id":
+			requiredBitSet[1] |= 1 << 7
+			if err := func() error {
+				if err := s.ManagedResourceID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_resource_id\"")
+			}
+		case "created_at":
+			requiredBitSet[2] |= 1 << 0
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -3579,7 +3946,7 @@ func (s *DockerRegistrySecretResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"created_at\"")
 			}
 		case "updated_at":
-			requiredBitSet[1] |= 1 << 7
+			requiredBitSet[2] |= 1 << 1
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.UpdatedAt = v
@@ -3599,9 +3966,10 @@ func (s *DockerRegistrySecretResource) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [2]uint8{
+	for i, mask := range [3]uint8{
 		0b11111111,
 		0b11111111,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -4359,6 +4727,14 @@ func (s *KvSecretResource) encodeFields(e *jx.Encoder) {
 		e.Str(s.CreatedBy)
 	}
 	{
+		e.FieldStart("managed_by")
+		s.ManagedBy.Encode(e)
+	}
+	{
+		e.FieldStart("managed_resource_id")
+		s.ManagedResourceID.Encode(e)
+	}
+	{
 		e.FieldStart("created_at")
 		json.EncodeDateTime(e, s.CreatedAt)
 	}
@@ -4368,7 +4744,7 @@ func (s *KvSecretResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfKvSecretResource = [14]string{
+var jsonFieldsNameOfKvSecretResource = [16]string{
 	0:  "id",
 	1:  "slug",
 	2:  "name",
@@ -4381,8 +4757,10 @@ var jsonFieldsNameOfKvSecretResource = [14]string{
 	9:  "expires_at",
 	10: "last_used_at",
 	11: "created_by",
-	12: "created_at",
-	13: "updated_at",
+	12: "managed_by",
+	13: "managed_resource_id",
+	14: "created_at",
+	15: "updated_at",
 }
 
 // Decode decodes KvSecretResource from json.
@@ -4548,8 +4926,28 @@ func (s *KvSecretResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"created_by\"")
 			}
-		case "created_at":
+		case "managed_by":
 			requiredBitSet[1] |= 1 << 4
+			if err := func() error {
+				if err := s.ManagedBy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_by\"")
+			}
+		case "managed_resource_id":
+			requiredBitSet[1] |= 1 << 5
+			if err := func() error {
+				if err := s.ManagedResourceID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_resource_id\"")
+			}
+		case "created_at":
+			requiredBitSet[1] |= 1 << 6
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -4561,7 +4959,7 @@ func (s *KvSecretResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"created_at\"")
 			}
 		case "updated_at":
-			requiredBitSet[1] |= 1 << 5
+			requiredBitSet[1] |= 1 << 7
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.UpdatedAt = v
@@ -4583,7 +4981,7 @@ func (s *KvSecretResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00111111,
+		0b11111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -4868,6 +5266,14 @@ func (s *LoginSecretResource) encodeFields(e *jx.Encoder) {
 		e.Str(s.CreatedBy)
 	}
 	{
+		e.FieldStart("managed_by")
+		s.ManagedBy.Encode(e)
+	}
+	{
+		e.FieldStart("managed_resource_id")
+		s.ManagedResourceID.Encode(e)
+	}
+	{
 		e.FieldStart("created_at")
 		json.EncodeDateTime(e, s.CreatedAt)
 	}
@@ -4877,7 +5283,7 @@ func (s *LoginSecretResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfLoginSecretResource = [17]string{
+var jsonFieldsNameOfLoginSecretResource = [19]string{
 	0:  "id",
 	1:  "slug",
 	2:  "name",
@@ -4893,8 +5299,10 @@ var jsonFieldsNameOfLoginSecretResource = [17]string{
 	12: "expires_at",
 	13: "last_used_at",
 	14: "created_by",
-	15: "created_at",
-	16: "updated_at",
+	15: "managed_by",
+	16: "managed_resource_id",
+	17: "created_at",
+	18: "updated_at",
 }
 
 // Decode decodes LoginSecretResource from json.
@@ -5104,8 +5512,28 @@ func (s *LoginSecretResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"created_by\"")
 			}
-		case "created_at":
+		case "managed_by":
 			requiredBitSet[1] |= 1 << 7
+			if err := func() error {
+				if err := s.ManagedBy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_by\"")
+			}
+		case "managed_resource_id":
+			requiredBitSet[2] |= 1 << 0
+			if err := func() error {
+				if err := s.ManagedResourceID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_resource_id\"")
+			}
+		case "created_at":
+			requiredBitSet[2] |= 1 << 1
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -5117,7 +5545,7 @@ func (s *LoginSecretResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"created_at\"")
 			}
 		case "updated_at":
-			requiredBitSet[2] |= 1 << 0
+			requiredBitSet[2] |= 1 << 2
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.UpdatedAt = v
@@ -5140,7 +5568,7 @@ func (s *LoginSecretResource) Decode(d *jx.Decoder) error {
 	for i, mask := range [3]uint8{
 		0b11111111,
 		0b11111111,
-		0b00000001,
+		0b00000111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -5230,6 +5658,52 @@ func (s NilDateTime) MarshalJSON() ([]byte, error) {
 func (s *NilDateTime) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d, json.DecodeDateTime)
+}
+
+// Encode encodes string as json.
+func (o NilString) Encode(e *jx.Encoder) {
+	if o.Null {
+		e.Null()
+		return
+	}
+	e.Str(string(o.Value))
+}
+
+// Decode decodes string from json.
+func (o *NilString) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode NilString to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v string
+		o.Value = v
+		o.Null = true
+		return nil
+	}
+	o.Null = false
+	v, err := d.Str()
+	if err != nil {
+		return err
+	}
+	o.Value = string(v)
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NilString) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NilString) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
 }
 
 // Encode encodes bool as json.
@@ -5418,6 +5892,57 @@ func (s OptNilDateTime) MarshalJSON() ([]byte, error) {
 func (s *OptNilDateTime) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d, json.DecodeDateTime)
+}
+
+// Encode encodes string as json.
+func (o OptNilString) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	if o.Null {
+		e.Null()
+		return
+	}
+	e.Str(string(o.Value))
+}
+
+// Decode decodes string from json.
+func (o *OptNilString) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptNilString to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v string
+		o.Value = v
+		o.Set = true
+		o.Null = true
+		return nil
+	}
+	o.Set = true
+	o.Null = false
+	v, err := d.Str()
+	if err != nil {
+		return err
+	}
+	o.Value = string(v)
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptNilString) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptNilString) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
 }
 
 // Encode encodes string as json.
@@ -7433,6 +7958,14 @@ func (s *SecretSummaryResource) encodeFields(e *jx.Encoder) {
 		e.Str(s.CreatedBy)
 	}
 	{
+		e.FieldStart("managed_by")
+		s.ManagedBy.Encode(e)
+	}
+	{
+		e.FieldStart("managed_resource_id")
+		s.ManagedResourceID.Encode(e)
+	}
+	{
 		e.FieldStart("created_at")
 		json.EncodeDateTime(e, s.CreatedAt)
 	}
@@ -7442,7 +7975,7 @@ func (s *SecretSummaryResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfSecretSummaryResource = [17]string{
+var jsonFieldsNameOfSecretSummaryResource = [19]string{
 	0:  "id",
 	1:  "slug",
 	2:  "name",
@@ -7458,8 +7991,10 @@ var jsonFieldsNameOfSecretSummaryResource = [17]string{
 	12: "expires_at",
 	13: "last_used_at",
 	14: "created_by",
-	15: "created_at",
-	16: "updated_at",
+	15: "managed_by",
+	16: "managed_resource_id",
+	17: "created_at",
+	18: "updated_at",
 }
 
 // Decode decodes SecretSummaryResource from json.
@@ -7649,8 +8184,28 @@ func (s *SecretSummaryResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"created_by\"")
 			}
-		case "created_at":
+		case "managed_by":
 			requiredBitSet[1] |= 1 << 7
+			if err := func() error {
+				if err := s.ManagedBy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_by\"")
+			}
+		case "managed_resource_id":
+			requiredBitSet[2] |= 1 << 0
+			if err := func() error {
+				if err := s.ManagedResourceID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_resource_id\"")
+			}
+		case "created_at":
+			requiredBitSet[2] |= 1 << 1
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -7662,7 +8217,7 @@ func (s *SecretSummaryResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"created_at\"")
 			}
 		case "updated_at":
-			requiredBitSet[2] |= 1 << 0
+			requiredBitSet[2] |= 1 << 2
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.UpdatedAt = v
@@ -7685,7 +8240,7 @@ func (s *SecretSummaryResource) Decode(d *jx.Decoder) error {
 	for i, mask := range [3]uint8{
 		0b11111111,
 		0b11111111,
-		0b00000001,
+		0b00000111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -8002,6 +8557,14 @@ func (s *SecureNoteSecretResource) encodeFields(e *jx.Encoder) {
 		e.Str(s.CreatedBy)
 	}
 	{
+		e.FieldStart("managed_by")
+		s.ManagedBy.Encode(e)
+	}
+	{
+		e.FieldStart("managed_resource_id")
+		s.ManagedResourceID.Encode(e)
+	}
+	{
 		e.FieldStart("created_at")
 		json.EncodeDateTime(e, s.CreatedAt)
 	}
@@ -8011,7 +8574,7 @@ func (s *SecureNoteSecretResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfSecureNoteSecretResource = [14]string{
+var jsonFieldsNameOfSecureNoteSecretResource = [16]string{
 	0:  "id",
 	1:  "slug",
 	2:  "name",
@@ -8024,8 +8587,10 @@ var jsonFieldsNameOfSecureNoteSecretResource = [14]string{
 	9:  "expires_at",
 	10: "last_used_at",
 	11: "created_by",
-	12: "created_at",
-	13: "updated_at",
+	12: "managed_by",
+	13: "managed_resource_id",
+	14: "created_at",
+	15: "updated_at",
 }
 
 // Decode decodes SecureNoteSecretResource from json.
@@ -8183,8 +8748,28 @@ func (s *SecureNoteSecretResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"created_by\"")
 			}
-		case "created_at":
+		case "managed_by":
 			requiredBitSet[1] |= 1 << 4
+			if err := func() error {
+				if err := s.ManagedBy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_by\"")
+			}
+		case "managed_resource_id":
+			requiredBitSet[1] |= 1 << 5
+			if err := func() error {
+				if err := s.ManagedResourceID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_resource_id\"")
+			}
+		case "created_at":
+			requiredBitSet[1] |= 1 << 6
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -8196,7 +8781,7 @@ func (s *SecureNoteSecretResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"created_at\"")
 			}
 		case "updated_at":
-			requiredBitSet[1] |= 1 << 5
+			requiredBitSet[1] |= 1 << 7
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.UpdatedAt = v
@@ -8218,7 +8803,7 @@ func (s *SecureNoteSecretResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00111111,
+		0b11111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -8495,6 +9080,14 @@ func (s *SshKeySecretResource) encodeFields(e *jx.Encoder) {
 		e.Str(s.CreatedBy)
 	}
 	{
+		e.FieldStart("managed_by")
+		s.ManagedBy.Encode(e)
+	}
+	{
+		e.FieldStart("managed_resource_id")
+		s.ManagedResourceID.Encode(e)
+	}
+	{
 		e.FieldStart("created_at")
 		json.EncodeDateTime(e, s.CreatedAt)
 	}
@@ -8504,7 +9097,7 @@ func (s *SshKeySecretResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfSshKeySecretResource = [17]string{
+var jsonFieldsNameOfSshKeySecretResource = [19]string{
 	0:  "id",
 	1:  "slug",
 	2:  "name",
@@ -8520,8 +9113,10 @@ var jsonFieldsNameOfSshKeySecretResource = [17]string{
 	12: "expires_at",
 	13: "last_used_at",
 	14: "created_by",
-	15: "created_at",
-	16: "updated_at",
+	15: "managed_by",
+	16: "managed_resource_id",
+	17: "created_at",
+	18: "updated_at",
 }
 
 // Decode decodes SshKeySecretResource from json.
@@ -8715,8 +9310,28 @@ func (s *SshKeySecretResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"created_by\"")
 			}
-		case "created_at":
+		case "managed_by":
 			requiredBitSet[1] |= 1 << 7
+			if err := func() error {
+				if err := s.ManagedBy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_by\"")
+			}
+		case "managed_resource_id":
+			requiredBitSet[2] |= 1 << 0
+			if err := func() error {
+				if err := s.ManagedResourceID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_resource_id\"")
+			}
+		case "created_at":
+			requiredBitSet[2] |= 1 << 1
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -8728,7 +9343,7 @@ func (s *SshKeySecretResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"created_at\"")
 			}
 		case "updated_at":
-			requiredBitSet[2] |= 1 << 0
+			requiredBitSet[2] |= 1 << 2
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.UpdatedAt = v
@@ -8751,7 +9366,7 @@ func (s *SshKeySecretResource) Decode(d *jx.Decoder) error {
 	for i, mask := range [3]uint8{
 		0b11111111,
 		0b11111111,
-		0b00000001,
+		0b00000111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -9056,6 +9671,14 @@ func (s *TlsCertificateSecretResource) encodeFields(e *jx.Encoder) {
 		e.Str(s.CreatedBy)
 	}
 	{
+		e.FieldStart("managed_by")
+		s.ManagedBy.Encode(e)
+	}
+	{
+		e.FieldStart("managed_resource_id")
+		s.ManagedResourceID.Encode(e)
+	}
+	{
 		e.FieldStart("created_at")
 		json.EncodeDateTime(e, s.CreatedAt)
 	}
@@ -9065,7 +9688,7 @@ func (s *TlsCertificateSecretResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfTlsCertificateSecretResource = [23]string{
+var jsonFieldsNameOfTlsCertificateSecretResource = [25]string{
 	0:  "id",
 	1:  "slug",
 	2:  "name",
@@ -9087,8 +9710,10 @@ var jsonFieldsNameOfTlsCertificateSecretResource = [23]string{
 	18: "expires_at",
 	19: "last_used_at",
 	20: "created_by",
-	21: "created_at",
-	22: "updated_at",
+	21: "managed_by",
+	22: "managed_resource_id",
+	23: "created_at",
+	24: "updated_at",
 }
 
 // Decode decodes TlsCertificateSecretResource from json.
@@ -9096,7 +9721,7 @@ func (s *TlsCertificateSecretResource) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode TlsCertificateSecretResource to nil")
 	}
-	var requiredBitSet [3]uint8
+	var requiredBitSet [4]uint8
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
@@ -9362,8 +9987,28 @@ func (s *TlsCertificateSecretResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"created_by\"")
 			}
-		case "created_at":
+		case "managed_by":
 			requiredBitSet[2] |= 1 << 5
+			if err := func() error {
+				if err := s.ManagedBy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_by\"")
+			}
+		case "managed_resource_id":
+			requiredBitSet[2] |= 1 << 6
+			if err := func() error {
+				if err := s.ManagedResourceID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_resource_id\"")
+			}
+		case "created_at":
+			requiredBitSet[2] |= 1 << 7
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -9375,7 +10020,7 @@ func (s *TlsCertificateSecretResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"created_at\"")
 			}
 		case "updated_at":
-			requiredBitSet[2] |= 1 << 6
+			requiredBitSet[3] |= 1 << 0
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.UpdatedAt = v
@@ -9395,10 +10040,11 @@ func (s *TlsCertificateSecretResource) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [3]uint8{
+	for i, mask := range [4]uint8{
 		0b11111111,
 		0b11111111,
-		0b01111111,
+		0b11111111,
+		0b00000001,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -9623,6 +10269,18 @@ func (s *UpdateApiKeyRequest) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.ManagedBy.Set {
+			e.FieldStart("managed_by")
+			s.ManagedBy.Encode(e)
+		}
+	}
+	{
+		if s.ManagedResourceID.Set {
+			e.FieldStart("managed_resource_id")
+			s.ManagedResourceID.Encode(e)
+		}
+	}
+	{
 		if s.Revealable.Set {
 			e.FieldStart("revealable")
 			s.Revealable.Encode(e)
@@ -9660,16 +10318,18 @@ func (s *UpdateApiKeyRequest) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfUpdateApiKeyRequest = [9]string{
-	0: "name",
-	1: "description",
-	2: "tags",
-	3: "revealable",
-	4: "clear_expires_at",
-	5: "expires_at",
-	6: "provider",
-	7: "token",
-	8: "fields",
+var jsonFieldsNameOfUpdateApiKeyRequest = [11]string{
+	0:  "name",
+	1:  "description",
+	2:  "tags",
+	3:  "managed_by",
+	4:  "managed_resource_id",
+	5:  "revealable",
+	6:  "clear_expires_at",
+	7:  "expires_at",
+	8:  "provider",
+	9:  "token",
+	10: "fields",
 }
 
 // Decode decodes UpdateApiKeyRequest from json.
@@ -9718,6 +10378,26 @@ func (s *UpdateApiKeyRequest) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"tags\"")
+			}
+		case "managed_by":
+			if err := func() error {
+				s.ManagedBy.Reset()
+				if err := s.ManagedBy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_by\"")
+			}
+		case "managed_resource_id":
+			if err := func() error {
+				s.ManagedResourceID.Reset()
+				if err := s.ManagedResourceID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_resource_id\"")
 			}
 		case "revealable":
 			if err := func() error {
@@ -9891,6 +10571,18 @@ func (s *UpdateBasicAuthRequest) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.ManagedBy.Set {
+			e.FieldStart("managed_by")
+			s.ManagedBy.Encode(e)
+		}
+	}
+	{
+		if s.ManagedResourceID.Set {
+			e.FieldStart("managed_resource_id")
+			s.ManagedResourceID.Encode(e)
+		}
+	}
+	{
 		if s.Revealable.Set {
 			e.FieldStart("revealable")
 			s.Revealable.Encode(e)
@@ -9922,15 +10614,17 @@ func (s *UpdateBasicAuthRequest) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfUpdateBasicAuthRequest = [8]string{
+var jsonFieldsNameOfUpdateBasicAuthRequest = [10]string{
 	0: "name",
 	1: "description",
 	2: "tags",
-	3: "revealable",
-	4: "clear_expires_at",
-	5: "expires_at",
-	6: "username",
-	7: "password",
+	3: "managed_by",
+	4: "managed_resource_id",
+	5: "revealable",
+	6: "clear_expires_at",
+	7: "expires_at",
+	8: "username",
+	9: "password",
 }
 
 // Decode decodes UpdateBasicAuthRequest from json.
@@ -9979,6 +10673,26 @@ func (s *UpdateBasicAuthRequest) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"tags\"")
+			}
+		case "managed_by":
+			if err := func() error {
+				s.ManagedBy.Reset()
+				if err := s.ManagedBy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_by\"")
+			}
+		case "managed_resource_id":
+			if err := func() error {
+				s.ManagedResourceID.Reset()
+				if err := s.ManagedResourceID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_resource_id\"")
 			}
 		case "revealable":
 			if err := func() error {
@@ -10086,6 +10800,18 @@ func (s *UpdateDockerRegistryRequest) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.ManagedBy.Set {
+			e.FieldStart("managed_by")
+			s.ManagedBy.Encode(e)
+		}
+	}
+	{
+		if s.ManagedResourceID.Set {
+			e.FieldStart("managed_resource_id")
+			s.ManagedResourceID.Encode(e)
+		}
+	}
+	{
 		if s.Revealable.Set {
 			e.FieldStart("revealable")
 			s.Revealable.Encode(e)
@@ -10129,17 +10855,19 @@ func (s *UpdateDockerRegistryRequest) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfUpdateDockerRegistryRequest = [10]string{
-	0: "name",
-	1: "description",
-	2: "tags",
-	3: "revealable",
-	4: "clear_expires_at",
-	5: "expires_at",
-	6: "server",
-	7: "username",
-	8: "password",
-	9: "email",
+var jsonFieldsNameOfUpdateDockerRegistryRequest = [12]string{
+	0:  "name",
+	1:  "description",
+	2:  "tags",
+	3:  "managed_by",
+	4:  "managed_resource_id",
+	5:  "revealable",
+	6:  "clear_expires_at",
+	7:  "expires_at",
+	8:  "server",
+	9:  "username",
+	10: "password",
+	11: "email",
 }
 
 // Decode decodes UpdateDockerRegistryRequest from json.
@@ -10188,6 +10916,26 @@ func (s *UpdateDockerRegistryRequest) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"tags\"")
+			}
+		case "managed_by":
+			if err := func() error {
+				s.ManagedBy.Reset()
+				if err := s.ManagedBy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_by\"")
+			}
+		case "managed_resource_id":
+			if err := func() error {
+				s.ManagedResourceID.Reset()
+				if err := s.ManagedResourceID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_resource_id\"")
 			}
 		case "revealable":
 			if err := func() error {
@@ -10315,6 +11063,18 @@ func (s *UpdateKvSecretRequest) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.ManagedBy.Set {
+			e.FieldStart("managed_by")
+			s.ManagedBy.Encode(e)
+		}
+	}
+	{
+		if s.ManagedResourceID.Set {
+			e.FieldStart("managed_resource_id")
+			s.ManagedResourceID.Encode(e)
+		}
+	}
+	{
 		if s.Revealable.Set {
 			e.FieldStart("revealable")
 			s.Revealable.Encode(e)
@@ -10340,14 +11100,16 @@ func (s *UpdateKvSecretRequest) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfUpdateKvSecretRequest = [7]string{
+var jsonFieldsNameOfUpdateKvSecretRequest = [9]string{
 	0: "name",
 	1: "description",
 	2: "tags",
-	3: "revealable",
-	4: "clear_expires_at",
-	5: "expires_at",
-	6: "data",
+	3: "managed_by",
+	4: "managed_resource_id",
+	5: "revealable",
+	6: "clear_expires_at",
+	7: "expires_at",
+	8: "data",
 }
 
 // Decode decodes UpdateKvSecretRequest from json.
@@ -10396,6 +11158,26 @@ func (s *UpdateKvSecretRequest) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"tags\"")
+			}
+		case "managed_by":
+			if err := func() error {
+				s.ManagedBy.Reset()
+				if err := s.ManagedBy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_by\"")
+			}
+		case "managed_resource_id":
+			if err := func() error {
+				s.ManagedResourceID.Reset()
+				if err := s.ManagedResourceID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_resource_id\"")
 			}
 		case "revealable":
 			if err := func() error {
@@ -10560,6 +11342,18 @@ func (s *UpdateLoginRequest) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.ManagedBy.Set {
+			e.FieldStart("managed_by")
+			s.ManagedBy.Encode(e)
+		}
+	}
+	{
+		if s.ManagedResourceID.Set {
+			e.FieldStart("managed_resource_id")
+			s.ManagedResourceID.Encode(e)
+		}
+	}
+	{
 		if s.Revealable.Set {
 			e.FieldStart("revealable")
 			s.Revealable.Encode(e)
@@ -10619,19 +11413,21 @@ func (s *UpdateLoginRequest) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfUpdateLoginRequest = [12]string{
+var jsonFieldsNameOfUpdateLoginRequest = [14]string{
 	0:  "name",
 	1:  "description",
 	2:  "tags",
-	3:  "revealable",
-	4:  "clear_expires_at",
-	5:  "expires_at",
-	6:  "username",
-	7:  "uris",
-	8:  "password",
-	9:  "totp",
-	10: "clear_totp",
-	11: "fields",
+	3:  "managed_by",
+	4:  "managed_resource_id",
+	5:  "revealable",
+	6:  "clear_expires_at",
+	7:  "expires_at",
+	8:  "username",
+	9:  "uris",
+	10: "password",
+	11: "totp",
+	12: "clear_totp",
+	13: "fields",
 }
 
 // Decode decodes UpdateLoginRequest from json.
@@ -10680,6 +11476,26 @@ func (s *UpdateLoginRequest) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"tags\"")
+			}
+		case "managed_by":
+			if err := func() error {
+				s.ManagedBy.Reset()
+				if err := s.ManagedBy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_by\"")
+			}
+		case "managed_resource_id":
+			if err := func() error {
+				s.ManagedResourceID.Reset()
+				if err := s.ManagedResourceID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_resource_id\"")
 			}
 		case "revealable":
 			if err := func() error {
@@ -10892,6 +11708,18 @@ func (s *UpdateSecureNoteRequest) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.ManagedBy.Set {
+			e.FieldStart("managed_by")
+			s.ManagedBy.Encode(e)
+		}
+	}
+	{
+		if s.ManagedResourceID.Set {
+			e.FieldStart("managed_resource_id")
+			s.ManagedResourceID.Encode(e)
+		}
+	}
+	{
 		if s.Revealable.Set {
 			e.FieldStart("revealable")
 			s.Revealable.Encode(e)
@@ -10917,14 +11745,16 @@ func (s *UpdateSecureNoteRequest) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfUpdateSecureNoteRequest = [7]string{
+var jsonFieldsNameOfUpdateSecureNoteRequest = [9]string{
 	0: "name",
 	1: "description",
 	2: "tags",
-	3: "revealable",
-	4: "clear_expires_at",
-	5: "expires_at",
-	6: "content",
+	3: "managed_by",
+	4: "managed_resource_id",
+	5: "revealable",
+	6: "clear_expires_at",
+	7: "expires_at",
+	8: "content",
 }
 
 // Decode decodes UpdateSecureNoteRequest from json.
@@ -10973,6 +11803,26 @@ func (s *UpdateSecureNoteRequest) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"tags\"")
+			}
+		case "managed_by":
+			if err := func() error {
+				s.ManagedBy.Reset()
+				if err := s.ManagedBy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_by\"")
+			}
+		case "managed_resource_id":
+			if err := func() error {
+				s.ManagedResourceID.Reset()
+				if err := s.ManagedResourceID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_resource_id\"")
 			}
 		case "revealable":
 			if err := func() error {
@@ -11070,6 +11920,18 @@ func (s *UpdateSshKeyRequest) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.ManagedBy.Set {
+			e.FieldStart("managed_by")
+			s.ManagedBy.Encode(e)
+		}
+	}
+	{
+		if s.ManagedResourceID.Set {
+			e.FieldStart("managed_resource_id")
+			s.ManagedResourceID.Encode(e)
+		}
+	}
+	{
 		if s.Revealable.Set {
 			e.FieldStart("revealable")
 			s.Revealable.Encode(e)
@@ -11101,15 +11963,17 @@ func (s *UpdateSshKeyRequest) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfUpdateSshKeyRequest = [8]string{
+var jsonFieldsNameOfUpdateSshKeyRequest = [10]string{
 	0: "name",
 	1: "description",
 	2: "tags",
-	3: "revealable",
-	4: "clear_expires_at",
-	5: "expires_at",
-	6: "private_key",
-	7: "passphrase",
+	3: "managed_by",
+	4: "managed_resource_id",
+	5: "revealable",
+	6: "clear_expires_at",
+	7: "expires_at",
+	8: "private_key",
+	9: "passphrase",
 }
 
 // Decode decodes UpdateSshKeyRequest from json.
@@ -11158,6 +12022,26 @@ func (s *UpdateSshKeyRequest) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"tags\"")
+			}
+		case "managed_by":
+			if err := func() error {
+				s.ManagedBy.Reset()
+				if err := s.ManagedBy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_by\"")
+			}
+		case "managed_resource_id":
+			if err := func() error {
+				s.ManagedResourceID.Reset()
+				if err := s.ManagedResourceID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_resource_id\"")
 			}
 		case "revealable":
 			if err := func() error {
@@ -11265,6 +12149,18 @@ func (s *UpdateTlsCertificateRequest) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.ManagedBy.Set {
+			e.FieldStart("managed_by")
+			s.ManagedBy.Encode(e)
+		}
+	}
+	{
+		if s.ManagedResourceID.Set {
+			e.FieldStart("managed_resource_id")
+			s.ManagedResourceID.Encode(e)
+		}
+	}
+	{
 		if s.Revealable.Set {
 			e.FieldStart("revealable")
 			s.Revealable.Encode(e)
@@ -11302,16 +12198,18 @@ func (s *UpdateTlsCertificateRequest) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfUpdateTlsCertificateRequest = [9]string{
-	0: "name",
-	1: "description",
-	2: "tags",
-	3: "revealable",
-	4: "clear_expires_at",
-	5: "expires_at",
-	6: "certificate",
-	7: "private_key",
-	8: "ca_certificate",
+var jsonFieldsNameOfUpdateTlsCertificateRequest = [11]string{
+	0:  "name",
+	1:  "description",
+	2:  "tags",
+	3:  "managed_by",
+	4:  "managed_resource_id",
+	5:  "revealable",
+	6:  "clear_expires_at",
+	7:  "expires_at",
+	8:  "certificate",
+	9:  "private_key",
+	10: "ca_certificate",
 }
 
 // Decode decodes UpdateTlsCertificateRequest from json.
@@ -11360,6 +12258,26 @@ func (s *UpdateTlsCertificateRequest) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"tags\"")
+			}
+		case "managed_by":
+			if err := func() error {
+				s.ManagedBy.Reset()
+				if err := s.ManagedBy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_by\"")
+			}
+		case "managed_resource_id":
+			if err := func() error {
+				s.ManagedResourceID.Reset()
+				if err := s.ManagedResourceID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"managed_resource_id\"")
 			}
 		case "revealable":
 			if err := func() error {

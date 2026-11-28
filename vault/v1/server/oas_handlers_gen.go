@@ -5387,6 +5387,14 @@ func (s *Server) handleListAPIKeysRequest(args [0]string, argsEscaped bool, w ht
 					In:   "query",
 				}: params.Tag,
 				{
+					Name: "managed",
+					In:   "query",
+				}: params.Managed,
+				{
+					Name: "managed_by",
+					In:   "query",
+				}: params.ManagedBy,
+				{
 					Name: "page",
 					In:   "query",
 				}: params.Page,
@@ -5598,6 +5606,14 @@ func (s *Server) handleListBasicAuthsRequest(args [0]string, argsEscaped bool, w
 					Name: "tag",
 					In:   "query",
 				}: params.Tag,
+				{
+					Name: "managed",
+					In:   "query",
+				}: params.Managed,
+				{
+					Name: "managed_by",
+					In:   "query",
+				}: params.ManagedBy,
 				{
 					Name: "page",
 					In:   "query",
@@ -5811,6 +5827,14 @@ func (s *Server) handleListDockerRegistriesRequest(args [0]string, argsEscaped b
 					In:   "query",
 				}: params.Tag,
 				{
+					Name: "managed",
+					In:   "query",
+				}: params.Managed,
+				{
+					Name: "managed_by",
+					In:   "query",
+				}: params.ManagedBy,
+				{
 					Name: "page",
 					In:   "query",
 				}: params.Page,
@@ -6022,6 +6046,14 @@ func (s *Server) handleListKvSecretsRequest(args [0]string, argsEscaped bool, w 
 					Name: "tag",
 					In:   "query",
 				}: params.Tag,
+				{
+					Name: "managed",
+					In:   "query",
+				}: params.Managed,
+				{
+					Name: "managed_by",
+					In:   "query",
+				}: params.ManagedBy,
 				{
 					Name: "page",
 					In:   "query",
@@ -6235,6 +6267,14 @@ func (s *Server) handleListLoginsRequest(args [0]string, argsEscaped bool, w htt
 					In:   "query",
 				}: params.Tag,
 				{
+					Name: "managed",
+					In:   "query",
+				}: params.Managed,
+				{
+					Name: "managed_by",
+					In:   "query",
+				}: params.ManagedBy,
+				{
 					Name: "page",
 					In:   "query",
 				}: params.Page,
@@ -6446,6 +6486,14 @@ func (s *Server) handleListSSHKeysRequest(args [0]string, argsEscaped bool, w ht
 					Name: "tag",
 					In:   "query",
 				}: params.Tag,
+				{
+					Name: "managed",
+					In:   "query",
+				}: params.Managed,
+				{
+					Name: "managed_by",
+					In:   "query",
+				}: params.ManagedBy,
 				{
 					Name: "page",
 					In:   "query",
@@ -6663,6 +6711,14 @@ func (s *Server) handleListSecretsRequest(args [0]string, argsEscaped bool, w ht
 					In:   "query",
 				}: params.Tag,
 				{
+					Name: "managed",
+					In:   "query",
+				}: params.Managed,
+				{
+					Name: "managed_by",
+					In:   "query",
+				}: params.ManagedBy,
+				{
 					Name: "page",
 					In:   "query",
 				}: params.Page,
@@ -6875,6 +6931,14 @@ func (s *Server) handleListSecureNotesRequest(args [0]string, argsEscaped bool, 
 					In:   "query",
 				}: params.Tag,
 				{
+					Name: "managed",
+					In:   "query",
+				}: params.Managed,
+				{
+					Name: "managed_by",
+					In:   "query",
+				}: params.ManagedBy,
+				{
 					Name: "page",
 					In:   "query",
 				}: params.Page,
@@ -7086,6 +7150,14 @@ func (s *Server) handleListTLSCertificatesRequest(args [0]string, argsEscaped bo
 					Name: "tag",
 					In:   "query",
 				}: params.Tag,
+				{
+					Name: "managed",
+					In:   "query",
+				}: params.Managed,
+				{
+					Name: "managed_by",
+					In:   "query",
+				}: params.ManagedBy,
 				{
 					Name: "expiring_before",
 					In:   "query",

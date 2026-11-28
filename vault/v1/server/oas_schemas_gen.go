@@ -78,8 +78,12 @@ type ApiKeySecretResource struct {
 	ExpiresAt   NilDateTime  `json:"expires_at"`
 	LastUsedAt  NilDateTime  `json:"last_used_at"`
 	CreatedBy   string       `json:"created_by"`
-	CreatedAt   time.Time    `json:"created_at"`
-	UpdatedAt   time.Time    `json:"updated_at"`
+	// Optional owner or service identifier managing this secret; null when unmanaged.
+	ManagedBy NilString `json:"managed_by"`
+	// Optional resource identifier within the managing service; null when unset.
+	ManagedResourceID NilString `json:"managed_resource_id"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
 }
 
 // GetID returns the value of ID.
@@ -150,6 +154,16 @@ func (s *ApiKeySecretResource) GetLastUsedAt() NilDateTime {
 // GetCreatedBy returns the value of CreatedBy.
 func (s *ApiKeySecretResource) GetCreatedBy() string {
 	return s.CreatedBy
+}
+
+// GetManagedBy returns the value of ManagedBy.
+func (s *ApiKeySecretResource) GetManagedBy() NilString {
+	return s.ManagedBy
+}
+
+// GetManagedResourceID returns the value of ManagedResourceID.
+func (s *ApiKeySecretResource) GetManagedResourceID() NilString {
+	return s.ManagedResourceID
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -232,6 +246,16 @@ func (s *ApiKeySecretResource) SetCreatedBy(val string) {
 	s.CreatedBy = val
 }
 
+// SetManagedBy sets the value of ManagedBy.
+func (s *ApiKeySecretResource) SetManagedBy(val NilString) {
+	s.ManagedBy = val
+}
+
+// SetManagedResourceID sets the value of ManagedResourceID.
+func (s *ApiKeySecretResource) SetManagedResourceID(val NilString) {
+	s.ManagedResourceID = val
+}
+
 // SetCreatedAt sets the value of CreatedAt.
 func (s *ApiKeySecretResource) SetCreatedAt(val time.Time) {
 	s.CreatedAt = val
@@ -304,8 +328,12 @@ type BasicAuthSecretResource struct {
 	ExpiresAt   NilDateTime  `json:"expires_at"`
 	LastUsedAt  NilDateTime  `json:"last_used_at"`
 	CreatedBy   string       `json:"created_by"`
-	CreatedAt   time.Time    `json:"created_at"`
-	UpdatedAt   time.Time    `json:"updated_at"`
+	// Optional owner or service identifier managing this secret; null when unmanaged.
+	ManagedBy NilString `json:"managed_by"`
+	// Optional resource identifier within the managing service; null when unset.
+	ManagedResourceID NilString `json:"managed_resource_id"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
 }
 
 // GetID returns the value of ID.
@@ -366,6 +394,16 @@ func (s *BasicAuthSecretResource) GetLastUsedAt() NilDateTime {
 // GetCreatedBy returns the value of CreatedBy.
 func (s *BasicAuthSecretResource) GetCreatedBy() string {
 	return s.CreatedBy
+}
+
+// GetManagedBy returns the value of ManagedBy.
+func (s *BasicAuthSecretResource) GetManagedBy() NilString {
+	return s.ManagedBy
+}
+
+// GetManagedResourceID returns the value of ManagedResourceID.
+func (s *BasicAuthSecretResource) GetManagedResourceID() NilString {
+	return s.ManagedResourceID
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -438,6 +476,16 @@ func (s *BasicAuthSecretResource) SetCreatedBy(val string) {
 	s.CreatedBy = val
 }
 
+// SetManagedBy sets the value of ManagedBy.
+func (s *BasicAuthSecretResource) SetManagedBy(val NilString) {
+	s.ManagedBy = val
+}
+
+// SetManagedResourceID sets the value of ManagedResourceID.
+func (s *BasicAuthSecretResource) SetManagedResourceID(val NilString) {
+	s.ManagedResourceID = val
+}
+
 // SetCreatedAt sets the value of CreatedAt.
 func (s *BasicAuthSecretResource) SetCreatedAt(val time.Time) {
 	s.CreatedAt = val
@@ -475,15 +523,20 @@ func (s *BearerAuth) SetRoles(val []string) {
 
 // Ref: #/components/schemas/CreateApiKeyRequest
 type CreateApiKeyRequest struct {
-	Slug        OptString                    `json:"slug"`
-	Name        string                       `json:"name"`
-	Description OptString                    `json:"description"`
-	Tags        []string                     `json:"tags"`
-	Revealable  OptBool                      `json:"revealable"`
-	ExpiresAt   OptNilDateTime               `json:"expires_at"`
-	Provider    OptString                    `json:"provider"`
-	Token       OptString                    `json:"token"`
-	Fields      OptCreateApiKeyRequestFields `json:"fields"`
+	Slug        OptString `json:"slug"`
+	Name        string    `json:"name"`
+	Description OptString `json:"description"`
+	Tags        []string  `json:"tags"`
+	// Optional controller or service identifier managing this secret (for example, `terraform`). The
+	// `leaflow.` prefix is reserved for platform-managed secrets.
+	ManagedBy OptNilString `json:"managed_by"`
+	// Optional resource identifier within the managing service. Requires `managed_by` to be set.
+	ManagedResourceID OptNilString                 `json:"managed_resource_id"`
+	Revealable        OptBool                      `json:"revealable"`
+	ExpiresAt         OptNilDateTime               `json:"expires_at"`
+	Provider          OptString                    `json:"provider"`
+	Token             OptString                    `json:"token"`
+	Fields            OptCreateApiKeyRequestFields `json:"fields"`
 }
 
 // GetSlug returns the value of Slug.
@@ -504,6 +557,16 @@ func (s *CreateApiKeyRequest) GetDescription() OptString {
 // GetTags returns the value of Tags.
 func (s *CreateApiKeyRequest) GetTags() []string {
 	return s.Tags
+}
+
+// GetManagedBy returns the value of ManagedBy.
+func (s *CreateApiKeyRequest) GetManagedBy() OptNilString {
+	return s.ManagedBy
+}
+
+// GetManagedResourceID returns the value of ManagedResourceID.
+func (s *CreateApiKeyRequest) GetManagedResourceID() OptNilString {
+	return s.ManagedResourceID
 }
 
 // GetRevealable returns the value of Revealable.
@@ -551,6 +614,16 @@ func (s *CreateApiKeyRequest) SetTags(val []string) {
 	s.Tags = val
 }
 
+// SetManagedBy sets the value of ManagedBy.
+func (s *CreateApiKeyRequest) SetManagedBy(val OptNilString) {
+	s.ManagedBy = val
+}
+
+// SetManagedResourceID sets the value of ManagedResourceID.
+func (s *CreateApiKeyRequest) SetManagedResourceID(val OptNilString) {
+	s.ManagedResourceID = val
+}
+
 // SetRevealable sets the value of Revealable.
 func (s *CreateApiKeyRequest) SetRevealable(val OptBool) {
 	s.Revealable = val
@@ -589,14 +662,19 @@ func (s *CreateApiKeyRequestFields) init() CreateApiKeyRequestFields {
 
 // Ref: #/components/schemas/CreateBasicAuthRequest
 type CreateBasicAuthRequest struct {
-	Slug        OptString      `json:"slug"`
-	Name        string         `json:"name"`
-	Description OptString      `json:"description"`
-	Tags        []string       `json:"tags"`
-	Revealable  OptBool        `json:"revealable"`
-	ExpiresAt   OptNilDateTime `json:"expires_at"`
-	Username    string         `json:"username"`
-	Password    string         `json:"password"`
+	Slug        OptString `json:"slug"`
+	Name        string    `json:"name"`
+	Description OptString `json:"description"`
+	Tags        []string  `json:"tags"`
+	// Optional controller or service identifier managing this secret (for example, `terraform`). The
+	// `leaflow.` prefix is reserved for platform-managed secrets.
+	ManagedBy OptNilString `json:"managed_by"`
+	// Optional resource identifier within the managing service. Requires `managed_by` to be set.
+	ManagedResourceID OptNilString   `json:"managed_resource_id"`
+	Revealable        OptBool        `json:"revealable"`
+	ExpiresAt         OptNilDateTime `json:"expires_at"`
+	Username          string         `json:"username"`
+	Password          string         `json:"password"`
 }
 
 // GetSlug returns the value of Slug.
@@ -617,6 +695,16 @@ func (s *CreateBasicAuthRequest) GetDescription() OptString {
 // GetTags returns the value of Tags.
 func (s *CreateBasicAuthRequest) GetTags() []string {
 	return s.Tags
+}
+
+// GetManagedBy returns the value of ManagedBy.
+func (s *CreateBasicAuthRequest) GetManagedBy() OptNilString {
+	return s.ManagedBy
+}
+
+// GetManagedResourceID returns the value of ManagedResourceID.
+func (s *CreateBasicAuthRequest) GetManagedResourceID() OptNilString {
+	return s.ManagedResourceID
 }
 
 // GetRevealable returns the value of Revealable.
@@ -659,6 +747,16 @@ func (s *CreateBasicAuthRequest) SetTags(val []string) {
 	s.Tags = val
 }
 
+// SetManagedBy sets the value of ManagedBy.
+func (s *CreateBasicAuthRequest) SetManagedBy(val OptNilString) {
+	s.ManagedBy = val
+}
+
+// SetManagedResourceID sets the value of ManagedResourceID.
+func (s *CreateBasicAuthRequest) SetManagedResourceID(val OptNilString) {
+	s.ManagedResourceID = val
+}
+
 // SetRevealable sets the value of Revealable.
 func (s *CreateBasicAuthRequest) SetRevealable(val OptBool) {
 	s.Revealable = val
@@ -681,16 +779,21 @@ func (s *CreateBasicAuthRequest) SetPassword(val string) {
 
 // Ref: #/components/schemas/CreateDockerRegistryRequest
 type CreateDockerRegistryRequest struct {
-	Slug        OptString      `json:"slug"`
-	Name        string         `json:"name"`
-	Description OptString      `json:"description"`
-	Tags        []string       `json:"tags"`
-	Revealable  OptBool        `json:"revealable"`
-	ExpiresAt   OptNilDateTime `json:"expires_at"`
-	Server      string         `json:"server"`
-	Username    string         `json:"username"`
-	Password    string         `json:"password"`
-	Email       OptString      `json:"email"`
+	Slug        OptString `json:"slug"`
+	Name        string    `json:"name"`
+	Description OptString `json:"description"`
+	Tags        []string  `json:"tags"`
+	// Optional controller or service identifier managing this secret (for example, `terraform`). The
+	// `leaflow.` prefix is reserved for platform-managed secrets.
+	ManagedBy OptNilString `json:"managed_by"`
+	// Optional resource identifier within the managing service. Requires `managed_by` to be set.
+	ManagedResourceID OptNilString   `json:"managed_resource_id"`
+	Revealable        OptBool        `json:"revealable"`
+	ExpiresAt         OptNilDateTime `json:"expires_at"`
+	Server            string         `json:"server"`
+	Username          string         `json:"username"`
+	Password          string         `json:"password"`
+	Email             OptString      `json:"email"`
 }
 
 // GetSlug returns the value of Slug.
@@ -711,6 +814,16 @@ func (s *CreateDockerRegistryRequest) GetDescription() OptString {
 // GetTags returns the value of Tags.
 func (s *CreateDockerRegistryRequest) GetTags() []string {
 	return s.Tags
+}
+
+// GetManagedBy returns the value of ManagedBy.
+func (s *CreateDockerRegistryRequest) GetManagedBy() OptNilString {
+	return s.ManagedBy
+}
+
+// GetManagedResourceID returns the value of ManagedResourceID.
+func (s *CreateDockerRegistryRequest) GetManagedResourceID() OptNilString {
+	return s.ManagedResourceID
 }
 
 // GetRevealable returns the value of Revealable.
@@ -763,6 +876,16 @@ func (s *CreateDockerRegistryRequest) SetTags(val []string) {
 	s.Tags = val
 }
 
+// SetManagedBy sets the value of ManagedBy.
+func (s *CreateDockerRegistryRequest) SetManagedBy(val OptNilString) {
+	s.ManagedBy = val
+}
+
+// SetManagedResourceID sets the value of ManagedResourceID.
+func (s *CreateDockerRegistryRequest) SetManagedResourceID(val OptNilString) {
+	s.ManagedResourceID = val
+}
+
 // SetRevealable sets the value of Revealable.
 func (s *CreateDockerRegistryRequest) SetRevealable(val OptBool) {
 	s.Revealable = val
@@ -795,13 +918,18 @@ func (s *CreateDockerRegistryRequest) SetEmail(val OptString) {
 
 // Ref: #/components/schemas/CreateKvSecretRequest
 type CreateKvSecretRequest struct {
-	Slug        OptString                 `json:"slug"`
-	Name        string                    `json:"name"`
-	Description OptString                 `json:"description"`
-	Tags        []string                  `json:"tags"`
-	Revealable  OptBool                   `json:"revealable"`
-	ExpiresAt   OptNilDateTime            `json:"expires_at"`
-	Data        CreateKvSecretRequestData `json:"data"`
+	Slug        OptString `json:"slug"`
+	Name        string    `json:"name"`
+	Description OptString `json:"description"`
+	Tags        []string  `json:"tags"`
+	// Optional controller or service identifier managing this secret (for example, `terraform`). The
+	// `leaflow.` prefix is reserved for platform-managed secrets.
+	ManagedBy OptNilString `json:"managed_by"`
+	// Optional resource identifier within the managing service. Requires `managed_by` to be set.
+	ManagedResourceID OptNilString              `json:"managed_resource_id"`
+	Revealable        OptBool                   `json:"revealable"`
+	ExpiresAt         OptNilDateTime            `json:"expires_at"`
+	Data              CreateKvSecretRequestData `json:"data"`
 }
 
 // GetSlug returns the value of Slug.
@@ -822,6 +950,16 @@ func (s *CreateKvSecretRequest) GetDescription() OptString {
 // GetTags returns the value of Tags.
 func (s *CreateKvSecretRequest) GetTags() []string {
 	return s.Tags
+}
+
+// GetManagedBy returns the value of ManagedBy.
+func (s *CreateKvSecretRequest) GetManagedBy() OptNilString {
+	return s.ManagedBy
+}
+
+// GetManagedResourceID returns the value of ManagedResourceID.
+func (s *CreateKvSecretRequest) GetManagedResourceID() OptNilString {
+	return s.ManagedResourceID
 }
 
 // GetRevealable returns the value of Revealable.
@@ -859,6 +997,16 @@ func (s *CreateKvSecretRequest) SetTags(val []string) {
 	s.Tags = val
 }
 
+// SetManagedBy sets the value of ManagedBy.
+func (s *CreateKvSecretRequest) SetManagedBy(val OptNilString) {
+	s.ManagedBy = val
+}
+
+// SetManagedResourceID sets the value of ManagedResourceID.
+func (s *CreateKvSecretRequest) SetManagedResourceID(val OptNilString) {
+	s.ManagedResourceID = val
+}
+
 // SetRevealable sets the value of Revealable.
 func (s *CreateKvSecretRequest) SetRevealable(val OptBool) {
 	s.Revealable = val
@@ -887,14 +1035,19 @@ func (s *CreateKvSecretRequestData) init() CreateKvSecretRequestData {
 
 // Ref: #/components/schemas/CreateLoginRequest
 type CreateLoginRequest struct {
-	Slug        OptString      `json:"slug"`
-	Name        string         `json:"name"`
-	Description OptString      `json:"description"`
-	Tags        []string       `json:"tags"`
-	Revealable  OptBool        `json:"revealable"`
-	ExpiresAt   OptNilDateTime `json:"expires_at"`
-	Username    OptString      `json:"username"`
-	Password    OptString      `json:"password"`
+	Slug        OptString `json:"slug"`
+	Name        string    `json:"name"`
+	Description OptString `json:"description"`
+	Tags        []string  `json:"tags"`
+	// Optional controller or service identifier managing this secret (for example, `terraform`). The
+	// `leaflow.` prefix is reserved for platform-managed secrets.
+	ManagedBy OptNilString `json:"managed_by"`
+	// Optional resource identifier within the managing service. Requires `managed_by` to be set.
+	ManagedResourceID OptNilString   `json:"managed_resource_id"`
+	Revealable        OptBool        `json:"revealable"`
+	ExpiresAt         OptNilDateTime `json:"expires_at"`
+	Username          OptString      `json:"username"`
+	Password          OptString      `json:"password"`
 	// Optional `otpauth://totp/...` URI or Base32 RFC 6238 secret seed.
 	Totp   OptString                   `json:"totp"`
 	Uris   []string                    `json:"uris"`
@@ -919,6 +1072,16 @@ func (s *CreateLoginRequest) GetDescription() OptString {
 // GetTags returns the value of Tags.
 func (s *CreateLoginRequest) GetTags() []string {
 	return s.Tags
+}
+
+// GetManagedBy returns the value of ManagedBy.
+func (s *CreateLoginRequest) GetManagedBy() OptNilString {
+	return s.ManagedBy
+}
+
+// GetManagedResourceID returns the value of ManagedResourceID.
+func (s *CreateLoginRequest) GetManagedResourceID() OptNilString {
+	return s.ManagedResourceID
 }
 
 // GetRevealable returns the value of Revealable.
@@ -976,6 +1139,16 @@ func (s *CreateLoginRequest) SetTags(val []string) {
 	s.Tags = val
 }
 
+// SetManagedBy sets the value of ManagedBy.
+func (s *CreateLoginRequest) SetManagedBy(val OptNilString) {
+	s.ManagedBy = val
+}
+
+// SetManagedResourceID sets the value of ManagedResourceID.
+func (s *CreateLoginRequest) SetManagedResourceID(val OptNilString) {
+	s.ManagedResourceID = val
+}
+
 // SetRevealable sets the value of Revealable.
 func (s *CreateLoginRequest) SetRevealable(val OptBool) {
 	s.Revealable = val
@@ -1024,13 +1197,18 @@ func (s *CreateLoginRequestFields) init() CreateLoginRequestFields {
 
 // Ref: #/components/schemas/CreateSecureNoteRequest
 type CreateSecureNoteRequest struct {
-	Slug        OptString      `json:"slug"`
-	Name        string         `json:"name"`
-	Description OptString      `json:"description"`
-	Tags        []string       `json:"tags"`
-	Revealable  OptBool        `json:"revealable"`
-	ExpiresAt   OptNilDateTime `json:"expires_at"`
-	Content     string         `json:"content"`
+	Slug        OptString `json:"slug"`
+	Name        string    `json:"name"`
+	Description OptString `json:"description"`
+	Tags        []string  `json:"tags"`
+	// Optional controller or service identifier managing this secret (for example, `terraform`). The
+	// `leaflow.` prefix is reserved for platform-managed secrets.
+	ManagedBy OptNilString `json:"managed_by"`
+	// Optional resource identifier within the managing service. Requires `managed_by` to be set.
+	ManagedResourceID OptNilString   `json:"managed_resource_id"`
+	Revealable        OptBool        `json:"revealable"`
+	ExpiresAt         OptNilDateTime `json:"expires_at"`
+	Content           string         `json:"content"`
 }
 
 // GetSlug returns the value of Slug.
@@ -1051,6 +1229,16 @@ func (s *CreateSecureNoteRequest) GetDescription() OptString {
 // GetTags returns the value of Tags.
 func (s *CreateSecureNoteRequest) GetTags() []string {
 	return s.Tags
+}
+
+// GetManagedBy returns the value of ManagedBy.
+func (s *CreateSecureNoteRequest) GetManagedBy() OptNilString {
+	return s.ManagedBy
+}
+
+// GetManagedResourceID returns the value of ManagedResourceID.
+func (s *CreateSecureNoteRequest) GetManagedResourceID() OptNilString {
+	return s.ManagedResourceID
 }
 
 // GetRevealable returns the value of Revealable.
@@ -1088,6 +1276,16 @@ func (s *CreateSecureNoteRequest) SetTags(val []string) {
 	s.Tags = val
 }
 
+// SetManagedBy sets the value of ManagedBy.
+func (s *CreateSecureNoteRequest) SetManagedBy(val OptNilString) {
+	s.ManagedBy = val
+}
+
+// SetManagedResourceID sets the value of ManagedResourceID.
+func (s *CreateSecureNoteRequest) SetManagedResourceID(val OptNilString) {
+	s.ManagedResourceID = val
+}
+
 // SetRevealable sets the value of Revealable.
 func (s *CreateSecureNoteRequest) SetRevealable(val OptBool) {
 	s.Revealable = val
@@ -1105,12 +1303,17 @@ func (s *CreateSecureNoteRequest) SetContent(val string) {
 
 // Ref: #/components/schemas/CreateSshKeyRequest
 type CreateSshKeyRequest struct {
-	Slug        OptString      `json:"slug"`
-	Name        string         `json:"name"`
-	Description OptString      `json:"description"`
-	Tags        []string       `json:"tags"`
-	Revealable  OptBool        `json:"revealable"`
-	ExpiresAt   OptNilDateTime `json:"expires_at"`
+	Slug        OptString `json:"slug"`
+	Name        string    `json:"name"`
+	Description OptString `json:"description"`
+	Tags        []string  `json:"tags"`
+	// Optional controller or service identifier managing this secret (for example, `terraform`). The
+	// `leaflow.` prefix is reserved for platform-managed secrets.
+	ManagedBy OptNilString `json:"managed_by"`
+	// Optional resource identifier within the managing service. Requires `managed_by` to be set.
+	ManagedResourceID OptNilString   `json:"managed_resource_id"`
+	Revealable        OptBool        `json:"revealable"`
+	ExpiresAt         OptNilDateTime `json:"expires_at"`
 	// OpenSSH or PEM encoded private key. Public key and SHA-256 fingerprint are derived automatically.
 	PrivateKey string    `json:"private_key"`
 	Passphrase OptString `json:"passphrase"`
@@ -1134,6 +1337,16 @@ func (s *CreateSshKeyRequest) GetDescription() OptString {
 // GetTags returns the value of Tags.
 func (s *CreateSshKeyRequest) GetTags() []string {
 	return s.Tags
+}
+
+// GetManagedBy returns the value of ManagedBy.
+func (s *CreateSshKeyRequest) GetManagedBy() OptNilString {
+	return s.ManagedBy
+}
+
+// GetManagedResourceID returns the value of ManagedResourceID.
+func (s *CreateSshKeyRequest) GetManagedResourceID() OptNilString {
+	return s.ManagedResourceID
 }
 
 // GetRevealable returns the value of Revealable.
@@ -1176,6 +1389,16 @@ func (s *CreateSshKeyRequest) SetTags(val []string) {
 	s.Tags = val
 }
 
+// SetManagedBy sets the value of ManagedBy.
+func (s *CreateSshKeyRequest) SetManagedBy(val OptNilString) {
+	s.ManagedBy = val
+}
+
+// SetManagedResourceID sets the value of ManagedResourceID.
+func (s *CreateSshKeyRequest) SetManagedResourceID(val OptNilString) {
+	s.ManagedResourceID = val
+}
+
 // SetRevealable sets the value of Revealable.
 func (s *CreateSshKeyRequest) SetRevealable(val OptBool) {
 	s.Revealable = val
@@ -1198,12 +1421,17 @@ func (s *CreateSshKeyRequest) SetPassphrase(val OptString) {
 
 // Ref: #/components/schemas/CreateTlsCertificateRequest
 type CreateTlsCertificateRequest struct {
-	Slug        OptString      `json:"slug"`
-	Name        string         `json:"name"`
-	Description OptString      `json:"description"`
-	Tags        []string       `json:"tags"`
-	Revealable  OptBool        `json:"revealable"`
-	ExpiresAt   OptNilDateTime `json:"expires_at"`
+	Slug        OptString `json:"slug"`
+	Name        string    `json:"name"`
+	Description OptString `json:"description"`
+	Tags        []string  `json:"tags"`
+	// Optional controller or service identifier managing this secret (for example, `terraform`). The
+	// `leaflow.` prefix is reserved for platform-managed secrets.
+	ManagedBy OptNilString `json:"managed_by"`
+	// Optional resource identifier within the managing service. Requires `managed_by` to be set.
+	ManagedResourceID OptNilString   `json:"managed_resource_id"`
+	Revealable        OptBool        `json:"revealable"`
+	ExpiresAt         OptNilDateTime `json:"expires_at"`
 	// PEM-encoded X.509 certificate chain, leaf certificate first.
 	Certificate string `json:"certificate"`
 	// PEM-encoded private key matching the leaf certificate.
@@ -1229,6 +1457,16 @@ func (s *CreateTlsCertificateRequest) GetDescription() OptString {
 // GetTags returns the value of Tags.
 func (s *CreateTlsCertificateRequest) GetTags() []string {
 	return s.Tags
+}
+
+// GetManagedBy returns the value of ManagedBy.
+func (s *CreateTlsCertificateRequest) GetManagedBy() OptNilString {
+	return s.ManagedBy
+}
+
+// GetManagedResourceID returns the value of ManagedResourceID.
+func (s *CreateTlsCertificateRequest) GetManagedResourceID() OptNilString {
+	return s.ManagedResourceID
 }
 
 // GetRevealable returns the value of Revealable.
@@ -1274,6 +1512,16 @@ func (s *CreateTlsCertificateRequest) SetDescription(val OptString) {
 // SetTags sets the value of Tags.
 func (s *CreateTlsCertificateRequest) SetTags(val []string) {
 	s.Tags = val
+}
+
+// SetManagedBy sets the value of ManagedBy.
+func (s *CreateTlsCertificateRequest) SetManagedBy(val OptNilString) {
+	s.ManagedBy = val
+}
+
+// SetManagedResourceID sets the value of ManagedResourceID.
+func (s *CreateTlsCertificateRequest) SetManagedResourceID(val OptNilString) {
+	s.ManagedResourceID = val
 }
 
 // SetRevealable sets the value of Revealable.
@@ -1392,8 +1640,12 @@ type DockerRegistrySecretResource struct {
 	ExpiresAt   NilDateTime  `json:"expires_at"`
 	LastUsedAt  NilDateTime  `json:"last_used_at"`
 	CreatedBy   string       `json:"created_by"`
-	CreatedAt   time.Time    `json:"created_at"`
-	UpdatedAt   time.Time    `json:"updated_at"`
+	// Optional owner or service identifier managing this secret; null when unmanaged.
+	ManagedBy NilString `json:"managed_by"`
+	// Optional resource identifier within the managing service; null when unset.
+	ManagedResourceID NilString `json:"managed_resource_id"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
 }
 
 // GetID returns the value of ID.
@@ -1464,6 +1716,16 @@ func (s *DockerRegistrySecretResource) GetLastUsedAt() NilDateTime {
 // GetCreatedBy returns the value of CreatedBy.
 func (s *DockerRegistrySecretResource) GetCreatedBy() string {
 	return s.CreatedBy
+}
+
+// GetManagedBy returns the value of ManagedBy.
+func (s *DockerRegistrySecretResource) GetManagedBy() NilString {
+	return s.ManagedBy
+}
+
+// GetManagedResourceID returns the value of ManagedResourceID.
+func (s *DockerRegistrySecretResource) GetManagedResourceID() NilString {
+	return s.ManagedResourceID
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -1544,6 +1806,16 @@ func (s *DockerRegistrySecretResource) SetLastUsedAt(val NilDateTime) {
 // SetCreatedBy sets the value of CreatedBy.
 func (s *DockerRegistrySecretResource) SetCreatedBy(val string) {
 	s.CreatedBy = val
+}
+
+// SetManagedBy sets the value of ManagedBy.
+func (s *DockerRegistrySecretResource) SetManagedBy(val NilString) {
+	s.ManagedBy = val
+}
+
+// SetManagedResourceID sets the value of ManagedResourceID.
+func (s *DockerRegistrySecretResource) SetManagedResourceID(val NilString) {
+	s.ManagedResourceID = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -1810,8 +2082,12 @@ type KvSecretResource struct {
 	ExpiresAt   NilDateTime  `json:"expires_at"`
 	LastUsedAt  NilDateTime  `json:"last_used_at"`
 	CreatedBy   string       `json:"created_by"`
-	CreatedAt   time.Time    `json:"created_at"`
-	UpdatedAt   time.Time    `json:"updated_at"`
+	// Optional owner or service identifier managing this secret; null when unmanaged.
+	ManagedBy NilString `json:"managed_by"`
+	// Optional resource identifier within the managing service; null when unset.
+	ManagedResourceID NilString `json:"managed_resource_id"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
 }
 
 // GetID returns the value of ID.
@@ -1872,6 +2148,16 @@ func (s *KvSecretResource) GetLastUsedAt() NilDateTime {
 // GetCreatedBy returns the value of CreatedBy.
 func (s *KvSecretResource) GetCreatedBy() string {
 	return s.CreatedBy
+}
+
+// GetManagedBy returns the value of ManagedBy.
+func (s *KvSecretResource) GetManagedBy() NilString {
+	return s.ManagedBy
+}
+
+// GetManagedResourceID returns the value of ManagedResourceID.
+func (s *KvSecretResource) GetManagedResourceID() NilString {
+	return s.ManagedResourceID
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -1942,6 +2228,16 @@ func (s *KvSecretResource) SetLastUsedAt(val NilDateTime) {
 // SetCreatedBy sets the value of CreatedBy.
 func (s *KvSecretResource) SetCreatedBy(val string) {
 	s.CreatedBy = val
+}
+
+// SetManagedBy sets the value of ManagedBy.
+func (s *KvSecretResource) SetManagedBy(val NilString) {
+	s.ManagedBy = val
+}
+
+// SetManagedResourceID sets the value of ManagedResourceID.
+func (s *KvSecretResource) SetManagedResourceID(val NilString) {
+	s.ManagedResourceID = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -2019,8 +2315,12 @@ type LoginSecretResource struct {
 	ExpiresAt   NilDateTime  `json:"expires_at"`
 	LastUsedAt  NilDateTime  `json:"last_used_at"`
 	CreatedBy   string       `json:"created_by"`
-	CreatedAt   time.Time    `json:"created_at"`
-	UpdatedAt   time.Time    `json:"updated_at"`
+	// Optional owner or service identifier managing this secret; null when unmanaged.
+	ManagedBy NilString `json:"managed_by"`
+	// Optional resource identifier within the managing service; null when unset.
+	ManagedResourceID NilString `json:"managed_resource_id"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
 }
 
 // GetID returns the value of ID.
@@ -2096,6 +2396,16 @@ func (s *LoginSecretResource) GetLastUsedAt() NilDateTime {
 // GetCreatedBy returns the value of CreatedBy.
 func (s *LoginSecretResource) GetCreatedBy() string {
 	return s.CreatedBy
+}
+
+// GetManagedBy returns the value of ManagedBy.
+func (s *LoginSecretResource) GetManagedBy() NilString {
+	return s.ManagedBy
+}
+
+// GetManagedResourceID returns the value of ManagedResourceID.
+func (s *LoginSecretResource) GetManagedResourceID() NilString {
+	return s.ManagedResourceID
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -2183,6 +2493,16 @@ func (s *LoginSecretResource) SetCreatedBy(val string) {
 	s.CreatedBy = val
 }
 
+// SetManagedBy sets the value of ManagedBy.
+func (s *LoginSecretResource) SetManagedBy(val NilString) {
+	s.ManagedBy = val
+}
+
+// SetManagedResourceID sets the value of ManagedResourceID.
+func (s *LoginSecretResource) SetManagedResourceID(val NilString) {
+	s.ManagedResourceID = val
+}
+
 // SetCreatedAt sets the value of CreatedAt.
 func (s *LoginSecretResource) SetCreatedAt(val time.Time) {
 	s.CreatedAt = val
@@ -2232,6 +2552,51 @@ func (o NilDateTime) Get() (v time.Time, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilDateTime) Or(d time.Time) time.Time {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilString returns new NilString with value set to v.
+func NewNilString(v string) NilString {
+	return NilString{
+		Value: v,
+	}
+}
+
+// NilString is nullable string.
+type NilString struct {
+	Value string
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilString) SetTo(v string) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilString) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilString) SetToNull() {
+	o.Null = true
+	var v string
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilString) Get() (v string, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilString) Or(d string) string {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -2576,6 +2941,74 @@ func (o OptNilDateTime) Get() (v time.Time, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptNilDateTime) Or(d time.Time) time.Time {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNilString returns new OptNilString with value set to v.
+func NewOptNilString(v string) OptNilString {
+	return OptNilString{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilString is optional nullable string.
+type OptNilString struct {
+	Value string
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilString was set.
+func (o OptNilString) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilString) Reset() {
+	var v string
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilString) SetTo(v string) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilString) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilString) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v string
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilString) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilString) Get() (v string, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilString) Or(d string) string {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -3505,8 +3938,12 @@ type SecretSummaryResource struct {
 	ExpiresAt  NilDateTime `json:"expires_at"`
 	LastUsedAt NilDateTime `json:"last_used_at"`
 	CreatedBy  string      `json:"created_by"`
-	CreatedAt  time.Time   `json:"created_at"`
-	UpdatedAt  time.Time   `json:"updated_at"`
+	// Optional owner or service identifier managing this secret; null when unmanaged.
+	ManagedBy NilString `json:"managed_by"`
+	// Optional resource identifier within the managing service; null when unset.
+	ManagedResourceID NilString `json:"managed_resource_id"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
 }
 
 // GetID returns the value of ID.
@@ -3582,6 +4019,16 @@ func (s *SecretSummaryResource) GetLastUsedAt() NilDateTime {
 // GetCreatedBy returns the value of CreatedBy.
 func (s *SecretSummaryResource) GetCreatedBy() string {
 	return s.CreatedBy
+}
+
+// GetManagedBy returns the value of ManagedBy.
+func (s *SecretSummaryResource) GetManagedBy() NilString {
+	return s.ManagedBy
+}
+
+// GetManagedResourceID returns the value of ManagedResourceID.
+func (s *SecretSummaryResource) GetManagedResourceID() NilString {
+	return s.ManagedResourceID
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -3667,6 +4114,16 @@ func (s *SecretSummaryResource) SetLastUsedAt(val NilDateTime) {
 // SetCreatedBy sets the value of CreatedBy.
 func (s *SecretSummaryResource) SetCreatedBy(val string) {
 	s.CreatedBy = val
+}
+
+// SetManagedBy sets the value of ManagedBy.
+func (s *SecretSummaryResource) SetManagedBy(val NilString) {
+	s.ManagedBy = val
+}
+
+// SetManagedResourceID sets the value of ManagedResourceID.
+func (s *SecretSummaryResource) SetManagedResourceID(val NilString) {
+	s.ManagedResourceID = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -3825,8 +4282,12 @@ type SecureNoteSecretResource struct {
 	ExpiresAt   NilDateTime  `json:"expires_at"`
 	LastUsedAt  NilDateTime  `json:"last_used_at"`
 	CreatedBy   string       `json:"created_by"`
-	CreatedAt   time.Time    `json:"created_at"`
-	UpdatedAt   time.Time    `json:"updated_at"`
+	// Optional owner or service identifier managing this secret; null when unmanaged.
+	ManagedBy NilString `json:"managed_by"`
+	// Optional resource identifier within the managing service; null when unset.
+	ManagedResourceID NilString `json:"managed_resource_id"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
 }
 
 // GetID returns the value of ID.
@@ -3887,6 +4348,16 @@ func (s *SecureNoteSecretResource) GetLastUsedAt() NilDateTime {
 // GetCreatedBy returns the value of CreatedBy.
 func (s *SecureNoteSecretResource) GetCreatedBy() string {
 	return s.CreatedBy
+}
+
+// GetManagedBy returns the value of ManagedBy.
+func (s *SecureNoteSecretResource) GetManagedBy() NilString {
+	return s.ManagedBy
+}
+
+// GetManagedResourceID returns the value of ManagedResourceID.
+func (s *SecureNoteSecretResource) GetManagedResourceID() NilString {
+	return s.ManagedResourceID
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -3957,6 +4428,16 @@ func (s *SecureNoteSecretResource) SetLastUsedAt(val NilDateTime) {
 // SetCreatedBy sets the value of CreatedBy.
 func (s *SecureNoteSecretResource) SetCreatedBy(val string) {
 	s.CreatedBy = val
+}
+
+// SetManagedBy sets the value of ManagedBy.
+func (s *SecureNoteSecretResource) SetManagedBy(val NilString) {
+	s.ManagedBy = val
+}
+
+// SetManagedResourceID sets the value of ManagedResourceID.
+func (s *SecureNoteSecretResource) SetManagedResourceID(val NilString) {
+	s.ManagedResourceID = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -4034,8 +4515,12 @@ type SshKeySecretResource struct {
 	ExpiresAt     NilDateTime  `json:"expires_at"`
 	LastUsedAt    NilDateTime  `json:"last_used_at"`
 	CreatedBy     string       `json:"created_by"`
-	CreatedAt     time.Time    `json:"created_at"`
-	UpdatedAt     time.Time    `json:"updated_at"`
+	// Optional owner or service identifier managing this secret; null when unmanaged.
+	ManagedBy NilString `json:"managed_by"`
+	// Optional resource identifier within the managing service; null when unset.
+	ManagedResourceID NilString `json:"managed_resource_id"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
 }
 
 // GetID returns the value of ID.
@@ -4111,6 +4596,16 @@ func (s *SshKeySecretResource) GetLastUsedAt() NilDateTime {
 // GetCreatedBy returns the value of CreatedBy.
 func (s *SshKeySecretResource) GetCreatedBy() string {
 	return s.CreatedBy
+}
+
+// GetManagedBy returns the value of ManagedBy.
+func (s *SshKeySecretResource) GetManagedBy() NilString {
+	return s.ManagedBy
+}
+
+// GetManagedResourceID returns the value of ManagedResourceID.
+func (s *SshKeySecretResource) GetManagedResourceID() NilString {
+	return s.ManagedResourceID
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -4198,6 +4693,16 @@ func (s *SshKeySecretResource) SetCreatedBy(val string) {
 	s.CreatedBy = val
 }
 
+// SetManagedBy sets the value of ManagedBy.
+func (s *SshKeySecretResource) SetManagedBy(val NilString) {
+	s.ManagedBy = val
+}
+
+// SetManagedResourceID sets the value of ManagedResourceID.
+func (s *SshKeySecretResource) SetManagedResourceID(val NilString) {
+	s.ManagedResourceID = val
+}
+
 // SetCreatedAt sets the value of CreatedAt.
 func (s *SshKeySecretResource) SetCreatedAt(val time.Time) {
 	s.CreatedAt = val
@@ -4280,8 +4785,12 @@ type TlsCertificateSecretResource struct {
 	ExpiresAt     NilDateTime `json:"expires_at"`
 	LastUsedAt    NilDateTime `json:"last_used_at"`
 	CreatedBy     string      `json:"created_by"`
-	CreatedAt     time.Time   `json:"created_at"`
-	UpdatedAt     time.Time   `json:"updated_at"`
+	// Optional owner or service identifier managing this secret; null when unmanaged.
+	ManagedBy NilString `json:"managed_by"`
+	// Optional resource identifier within the managing service; null when unset.
+	ManagedResourceID NilString `json:"managed_resource_id"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
 }
 
 // GetID returns the value of ID.
@@ -4387,6 +4896,16 @@ func (s *TlsCertificateSecretResource) GetLastUsedAt() NilDateTime {
 // GetCreatedBy returns the value of CreatedBy.
 func (s *TlsCertificateSecretResource) GetCreatedBy() string {
 	return s.CreatedBy
+}
+
+// GetManagedBy returns the value of ManagedBy.
+func (s *TlsCertificateSecretResource) GetManagedBy() NilString {
+	return s.ManagedBy
+}
+
+// GetManagedResourceID returns the value of ManagedResourceID.
+func (s *TlsCertificateSecretResource) GetManagedResourceID() NilString {
+	return s.ManagedResourceID
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -4504,6 +5023,16 @@ func (s *TlsCertificateSecretResource) SetCreatedBy(val string) {
 	s.CreatedBy = val
 }
 
+// SetManagedBy sets the value of ManagedBy.
+func (s *TlsCertificateSecretResource) SetManagedBy(val NilString) {
+	s.ManagedBy = val
+}
+
+// SetManagedResourceID sets the value of ManagedResourceID.
+func (s *TlsCertificateSecretResource) SetManagedResourceID(val NilString) {
+	s.ManagedResourceID = val
+}
+
 // SetCreatedAt sets the value of CreatedAt.
 func (s *TlsCertificateSecretResource) SetCreatedAt(val time.Time) {
 	s.CreatedAt = val
@@ -4564,15 +5093,20 @@ func (s *TotpCodeResponse) SetExpiresAt(val time.Time) {
 
 // Ref: #/components/schemas/UpdateApiKeyRequest
 type UpdateApiKeyRequest struct {
-	Name           OptString                    `json:"name"`
-	Description    OptString                    `json:"description"`
-	Tags           []string                     `json:"tags"`
-	Revealable     OptBool                      `json:"revealable"`
-	ClearExpiresAt OptBool                      `json:"clear_expires_at"`
-	ExpiresAt      OptNilDateTime               `json:"expires_at"`
-	Provider       OptString                    `json:"provider"`
-	Token          OptString                    `json:"token"`
-	Fields         OptUpdateApiKeyRequestFields `json:"fields"`
+	Name        OptString `json:"name"`
+	Description OptString `json:"description"`
+	Tags        []string  `json:"tags"`
+	// Optional controller or service identifier managing this secret (for example, `terraform`). The
+	// `leaflow.` prefix is reserved for platform-managed secrets.
+	ManagedBy OptNilString `json:"managed_by"`
+	// Optional resource identifier within the managing service. Requires `managed_by` to be set.
+	ManagedResourceID OptNilString                 `json:"managed_resource_id"`
+	Revealable        OptBool                      `json:"revealable"`
+	ClearExpiresAt    OptBool                      `json:"clear_expires_at"`
+	ExpiresAt         OptNilDateTime               `json:"expires_at"`
+	Provider          OptString                    `json:"provider"`
+	Token             OptString                    `json:"token"`
+	Fields            OptUpdateApiKeyRequestFields `json:"fields"`
 }
 
 // GetName returns the value of Name.
@@ -4588,6 +5122,16 @@ func (s *UpdateApiKeyRequest) GetDescription() OptString {
 // GetTags returns the value of Tags.
 func (s *UpdateApiKeyRequest) GetTags() []string {
 	return s.Tags
+}
+
+// GetManagedBy returns the value of ManagedBy.
+func (s *UpdateApiKeyRequest) GetManagedBy() OptNilString {
+	return s.ManagedBy
+}
+
+// GetManagedResourceID returns the value of ManagedResourceID.
+func (s *UpdateApiKeyRequest) GetManagedResourceID() OptNilString {
+	return s.ManagedResourceID
 }
 
 // GetRevealable returns the value of Revealable.
@@ -4635,6 +5179,16 @@ func (s *UpdateApiKeyRequest) SetTags(val []string) {
 	s.Tags = val
 }
 
+// SetManagedBy sets the value of ManagedBy.
+func (s *UpdateApiKeyRequest) SetManagedBy(val OptNilString) {
+	s.ManagedBy = val
+}
+
+// SetManagedResourceID sets the value of ManagedResourceID.
+func (s *UpdateApiKeyRequest) SetManagedResourceID(val OptNilString) {
+	s.ManagedResourceID = val
+}
+
 // SetRevealable sets the value of Revealable.
 func (s *UpdateApiKeyRequest) SetRevealable(val OptBool) {
 	s.Revealable = val
@@ -4678,14 +5232,19 @@ func (s *UpdateApiKeyRequestFields) init() UpdateApiKeyRequestFields {
 
 // Ref: #/components/schemas/UpdateBasicAuthRequest
 type UpdateBasicAuthRequest struct {
-	Name           OptString      `json:"name"`
-	Description    OptString      `json:"description"`
-	Tags           []string       `json:"tags"`
-	Revealable     OptBool        `json:"revealable"`
-	ClearExpiresAt OptBool        `json:"clear_expires_at"`
-	ExpiresAt      OptNilDateTime `json:"expires_at"`
-	Username       OptString      `json:"username"`
-	Password       OptString      `json:"password"`
+	Name        OptString `json:"name"`
+	Description OptString `json:"description"`
+	Tags        []string  `json:"tags"`
+	// Optional controller or service identifier managing this secret (for example, `terraform`). The
+	// `leaflow.` prefix is reserved for platform-managed secrets.
+	ManagedBy OptNilString `json:"managed_by"`
+	// Optional resource identifier within the managing service. Requires `managed_by` to be set.
+	ManagedResourceID OptNilString   `json:"managed_resource_id"`
+	Revealable        OptBool        `json:"revealable"`
+	ClearExpiresAt    OptBool        `json:"clear_expires_at"`
+	ExpiresAt         OptNilDateTime `json:"expires_at"`
+	Username          OptString      `json:"username"`
+	Password          OptString      `json:"password"`
 }
 
 // GetName returns the value of Name.
@@ -4701,6 +5260,16 @@ func (s *UpdateBasicAuthRequest) GetDescription() OptString {
 // GetTags returns the value of Tags.
 func (s *UpdateBasicAuthRequest) GetTags() []string {
 	return s.Tags
+}
+
+// GetManagedBy returns the value of ManagedBy.
+func (s *UpdateBasicAuthRequest) GetManagedBy() OptNilString {
+	return s.ManagedBy
+}
+
+// GetManagedResourceID returns the value of ManagedResourceID.
+func (s *UpdateBasicAuthRequest) GetManagedResourceID() OptNilString {
+	return s.ManagedResourceID
 }
 
 // GetRevealable returns the value of Revealable.
@@ -4743,6 +5312,16 @@ func (s *UpdateBasicAuthRequest) SetTags(val []string) {
 	s.Tags = val
 }
 
+// SetManagedBy sets the value of ManagedBy.
+func (s *UpdateBasicAuthRequest) SetManagedBy(val OptNilString) {
+	s.ManagedBy = val
+}
+
+// SetManagedResourceID sets the value of ManagedResourceID.
+func (s *UpdateBasicAuthRequest) SetManagedResourceID(val OptNilString) {
+	s.ManagedResourceID = val
+}
+
 // SetRevealable sets the value of Revealable.
 func (s *UpdateBasicAuthRequest) SetRevealable(val OptBool) {
 	s.Revealable = val
@@ -4770,16 +5349,21 @@ func (s *UpdateBasicAuthRequest) SetPassword(val OptString) {
 
 // Ref: #/components/schemas/UpdateDockerRegistryRequest
 type UpdateDockerRegistryRequest struct {
-	Name           OptString      `json:"name"`
-	Description    OptString      `json:"description"`
-	Tags           []string       `json:"tags"`
-	Revealable     OptBool        `json:"revealable"`
-	ClearExpiresAt OptBool        `json:"clear_expires_at"`
-	ExpiresAt      OptNilDateTime `json:"expires_at"`
-	Server         OptString      `json:"server"`
-	Username       OptString      `json:"username"`
-	Password       OptString      `json:"password"`
-	Email          OptString      `json:"email"`
+	Name        OptString `json:"name"`
+	Description OptString `json:"description"`
+	Tags        []string  `json:"tags"`
+	// Optional controller or service identifier managing this secret (for example, `terraform`). The
+	// `leaflow.` prefix is reserved for platform-managed secrets.
+	ManagedBy OptNilString `json:"managed_by"`
+	// Optional resource identifier within the managing service. Requires `managed_by` to be set.
+	ManagedResourceID OptNilString   `json:"managed_resource_id"`
+	Revealable        OptBool        `json:"revealable"`
+	ClearExpiresAt    OptBool        `json:"clear_expires_at"`
+	ExpiresAt         OptNilDateTime `json:"expires_at"`
+	Server            OptString      `json:"server"`
+	Username          OptString      `json:"username"`
+	Password          OptString      `json:"password"`
+	Email             OptString      `json:"email"`
 }
 
 // GetName returns the value of Name.
@@ -4795,6 +5379,16 @@ func (s *UpdateDockerRegistryRequest) GetDescription() OptString {
 // GetTags returns the value of Tags.
 func (s *UpdateDockerRegistryRequest) GetTags() []string {
 	return s.Tags
+}
+
+// GetManagedBy returns the value of ManagedBy.
+func (s *UpdateDockerRegistryRequest) GetManagedBy() OptNilString {
+	return s.ManagedBy
+}
+
+// GetManagedResourceID returns the value of ManagedResourceID.
+func (s *UpdateDockerRegistryRequest) GetManagedResourceID() OptNilString {
+	return s.ManagedResourceID
 }
 
 // GetRevealable returns the value of Revealable.
@@ -4847,6 +5441,16 @@ func (s *UpdateDockerRegistryRequest) SetTags(val []string) {
 	s.Tags = val
 }
 
+// SetManagedBy sets the value of ManagedBy.
+func (s *UpdateDockerRegistryRequest) SetManagedBy(val OptNilString) {
+	s.ManagedBy = val
+}
+
+// SetManagedResourceID sets the value of ManagedResourceID.
+func (s *UpdateDockerRegistryRequest) SetManagedResourceID(val OptNilString) {
+	s.ManagedResourceID = val
+}
+
 // SetRevealable sets the value of Revealable.
 func (s *UpdateDockerRegistryRequest) SetRevealable(val OptBool) {
 	s.Revealable = val
@@ -4884,13 +5488,18 @@ func (s *UpdateDockerRegistryRequest) SetEmail(val OptString) {
 
 // Ref: #/components/schemas/UpdateKvSecretRequest
 type UpdateKvSecretRequest struct {
-	Name           OptString                    `json:"name"`
-	Description    OptString                    `json:"description"`
-	Tags           []string                     `json:"tags"`
-	Revealable     OptBool                      `json:"revealable"`
-	ClearExpiresAt OptBool                      `json:"clear_expires_at"`
-	ExpiresAt      OptNilDateTime               `json:"expires_at"`
-	Data           OptUpdateKvSecretRequestData `json:"data"`
+	Name        OptString `json:"name"`
+	Description OptString `json:"description"`
+	Tags        []string  `json:"tags"`
+	// Optional controller or service identifier managing this secret (for example, `terraform`). The
+	// `leaflow.` prefix is reserved for platform-managed secrets.
+	ManagedBy OptNilString `json:"managed_by"`
+	// Optional resource identifier within the managing service. Requires `managed_by` to be set.
+	ManagedResourceID OptNilString                 `json:"managed_resource_id"`
+	Revealable        OptBool                      `json:"revealable"`
+	ClearExpiresAt    OptBool                      `json:"clear_expires_at"`
+	ExpiresAt         OptNilDateTime               `json:"expires_at"`
+	Data              OptUpdateKvSecretRequestData `json:"data"`
 }
 
 // GetName returns the value of Name.
@@ -4906,6 +5515,16 @@ func (s *UpdateKvSecretRequest) GetDescription() OptString {
 // GetTags returns the value of Tags.
 func (s *UpdateKvSecretRequest) GetTags() []string {
 	return s.Tags
+}
+
+// GetManagedBy returns the value of ManagedBy.
+func (s *UpdateKvSecretRequest) GetManagedBy() OptNilString {
+	return s.ManagedBy
+}
+
+// GetManagedResourceID returns the value of ManagedResourceID.
+func (s *UpdateKvSecretRequest) GetManagedResourceID() OptNilString {
+	return s.ManagedResourceID
 }
 
 // GetRevealable returns the value of Revealable.
@@ -4943,6 +5562,16 @@ func (s *UpdateKvSecretRequest) SetTags(val []string) {
 	s.Tags = val
 }
 
+// SetManagedBy sets the value of ManagedBy.
+func (s *UpdateKvSecretRequest) SetManagedBy(val OptNilString) {
+	s.ManagedBy = val
+}
+
+// SetManagedResourceID sets the value of ManagedResourceID.
+func (s *UpdateKvSecretRequest) SetManagedResourceID(val OptNilString) {
+	s.ManagedResourceID = val
+}
+
 // SetRevealable sets the value of Revealable.
 func (s *UpdateKvSecretRequest) SetRevealable(val OptBool) {
 	s.Revealable = val
@@ -4976,18 +5605,23 @@ func (s *UpdateKvSecretRequestData) init() UpdateKvSecretRequestData {
 
 // Ref: #/components/schemas/UpdateLoginRequest
 type UpdateLoginRequest struct {
-	Name           OptString                   `json:"name"`
-	Description    OptString                   `json:"description"`
-	Tags           []string                    `json:"tags"`
-	Revealable     OptBool                     `json:"revealable"`
-	ClearExpiresAt OptBool                     `json:"clear_expires_at"`
-	ExpiresAt      OptNilDateTime              `json:"expires_at"`
-	Username       OptString                   `json:"username"`
-	Uris           []string                    `json:"uris"`
-	Password       OptString                   `json:"password"`
-	Totp           OptString                   `json:"totp"`
-	ClearTotp      OptBool                     `json:"clear_totp"`
-	Fields         OptUpdateLoginRequestFields `json:"fields"`
+	Name        OptString `json:"name"`
+	Description OptString `json:"description"`
+	Tags        []string  `json:"tags"`
+	// Optional controller or service identifier managing this secret (for example, `terraform`). The
+	// `leaflow.` prefix is reserved for platform-managed secrets.
+	ManagedBy OptNilString `json:"managed_by"`
+	// Optional resource identifier within the managing service. Requires `managed_by` to be set.
+	ManagedResourceID OptNilString                `json:"managed_resource_id"`
+	Revealable        OptBool                     `json:"revealable"`
+	ClearExpiresAt    OptBool                     `json:"clear_expires_at"`
+	ExpiresAt         OptNilDateTime              `json:"expires_at"`
+	Username          OptString                   `json:"username"`
+	Uris              []string                    `json:"uris"`
+	Password          OptString                   `json:"password"`
+	Totp              OptString                   `json:"totp"`
+	ClearTotp         OptBool                     `json:"clear_totp"`
+	Fields            OptUpdateLoginRequestFields `json:"fields"`
 }
 
 // GetName returns the value of Name.
@@ -5003,6 +5637,16 @@ func (s *UpdateLoginRequest) GetDescription() OptString {
 // GetTags returns the value of Tags.
 func (s *UpdateLoginRequest) GetTags() []string {
 	return s.Tags
+}
+
+// GetManagedBy returns the value of ManagedBy.
+func (s *UpdateLoginRequest) GetManagedBy() OptNilString {
+	return s.ManagedBy
+}
+
+// GetManagedResourceID returns the value of ManagedResourceID.
+func (s *UpdateLoginRequest) GetManagedResourceID() OptNilString {
+	return s.ManagedResourceID
 }
 
 // GetRevealable returns the value of Revealable.
@@ -5065,6 +5709,16 @@ func (s *UpdateLoginRequest) SetTags(val []string) {
 	s.Tags = val
 }
 
+// SetManagedBy sets the value of ManagedBy.
+func (s *UpdateLoginRequest) SetManagedBy(val OptNilString) {
+	s.ManagedBy = val
+}
+
+// SetManagedResourceID sets the value of ManagedResourceID.
+func (s *UpdateLoginRequest) SetManagedResourceID(val OptNilString) {
+	s.ManagedResourceID = val
+}
+
 // SetRevealable sets the value of Revealable.
 func (s *UpdateLoginRequest) SetRevealable(val OptBool) {
 	s.Revealable = val
@@ -5123,13 +5777,18 @@ func (s *UpdateLoginRequestFields) init() UpdateLoginRequestFields {
 
 // Ref: #/components/schemas/UpdateSecureNoteRequest
 type UpdateSecureNoteRequest struct {
-	Name           OptString      `json:"name"`
-	Description    OptString      `json:"description"`
-	Tags           []string       `json:"tags"`
-	Revealable     OptBool        `json:"revealable"`
-	ClearExpiresAt OptBool        `json:"clear_expires_at"`
-	ExpiresAt      OptNilDateTime `json:"expires_at"`
-	Content        OptString      `json:"content"`
+	Name        OptString `json:"name"`
+	Description OptString `json:"description"`
+	Tags        []string  `json:"tags"`
+	// Optional controller or service identifier managing this secret (for example, `terraform`). The
+	// `leaflow.` prefix is reserved for platform-managed secrets.
+	ManagedBy OptNilString `json:"managed_by"`
+	// Optional resource identifier within the managing service. Requires `managed_by` to be set.
+	ManagedResourceID OptNilString   `json:"managed_resource_id"`
+	Revealable        OptBool        `json:"revealable"`
+	ClearExpiresAt    OptBool        `json:"clear_expires_at"`
+	ExpiresAt         OptNilDateTime `json:"expires_at"`
+	Content           OptString      `json:"content"`
 }
 
 // GetName returns the value of Name.
@@ -5145,6 +5804,16 @@ func (s *UpdateSecureNoteRequest) GetDescription() OptString {
 // GetTags returns the value of Tags.
 func (s *UpdateSecureNoteRequest) GetTags() []string {
 	return s.Tags
+}
+
+// GetManagedBy returns the value of ManagedBy.
+func (s *UpdateSecureNoteRequest) GetManagedBy() OptNilString {
+	return s.ManagedBy
+}
+
+// GetManagedResourceID returns the value of ManagedResourceID.
+func (s *UpdateSecureNoteRequest) GetManagedResourceID() OptNilString {
+	return s.ManagedResourceID
 }
 
 // GetRevealable returns the value of Revealable.
@@ -5182,6 +5851,16 @@ func (s *UpdateSecureNoteRequest) SetTags(val []string) {
 	s.Tags = val
 }
 
+// SetManagedBy sets the value of ManagedBy.
+func (s *UpdateSecureNoteRequest) SetManagedBy(val OptNilString) {
+	s.ManagedBy = val
+}
+
+// SetManagedResourceID sets the value of ManagedResourceID.
+func (s *UpdateSecureNoteRequest) SetManagedResourceID(val OptNilString) {
+	s.ManagedResourceID = val
+}
+
 // SetRevealable sets the value of Revealable.
 func (s *UpdateSecureNoteRequest) SetRevealable(val OptBool) {
 	s.Revealable = val
@@ -5204,14 +5883,19 @@ func (s *UpdateSecureNoteRequest) SetContent(val OptString) {
 
 // Ref: #/components/schemas/UpdateSshKeyRequest
 type UpdateSshKeyRequest struct {
-	Name           OptString      `json:"name"`
-	Description    OptString      `json:"description"`
-	Tags           []string       `json:"tags"`
-	Revealable     OptBool        `json:"revealable"`
-	ClearExpiresAt OptBool        `json:"clear_expires_at"`
-	ExpiresAt      OptNilDateTime `json:"expires_at"`
-	PrivateKey     OptString      `json:"private_key"`
-	Passphrase     OptString      `json:"passphrase"`
+	Name        OptString `json:"name"`
+	Description OptString `json:"description"`
+	Tags        []string  `json:"tags"`
+	// Optional controller or service identifier managing this secret (for example, `terraform`). The
+	// `leaflow.` prefix is reserved for platform-managed secrets.
+	ManagedBy OptNilString `json:"managed_by"`
+	// Optional resource identifier within the managing service. Requires `managed_by` to be set.
+	ManagedResourceID OptNilString   `json:"managed_resource_id"`
+	Revealable        OptBool        `json:"revealable"`
+	ClearExpiresAt    OptBool        `json:"clear_expires_at"`
+	ExpiresAt         OptNilDateTime `json:"expires_at"`
+	PrivateKey        OptString      `json:"private_key"`
+	Passphrase        OptString      `json:"passphrase"`
 }
 
 // GetName returns the value of Name.
@@ -5227,6 +5911,16 @@ func (s *UpdateSshKeyRequest) GetDescription() OptString {
 // GetTags returns the value of Tags.
 func (s *UpdateSshKeyRequest) GetTags() []string {
 	return s.Tags
+}
+
+// GetManagedBy returns the value of ManagedBy.
+func (s *UpdateSshKeyRequest) GetManagedBy() OptNilString {
+	return s.ManagedBy
+}
+
+// GetManagedResourceID returns the value of ManagedResourceID.
+func (s *UpdateSshKeyRequest) GetManagedResourceID() OptNilString {
+	return s.ManagedResourceID
 }
 
 // GetRevealable returns the value of Revealable.
@@ -5269,6 +5963,16 @@ func (s *UpdateSshKeyRequest) SetTags(val []string) {
 	s.Tags = val
 }
 
+// SetManagedBy sets the value of ManagedBy.
+func (s *UpdateSshKeyRequest) SetManagedBy(val OptNilString) {
+	s.ManagedBy = val
+}
+
+// SetManagedResourceID sets the value of ManagedResourceID.
+func (s *UpdateSshKeyRequest) SetManagedResourceID(val OptNilString) {
+	s.ManagedResourceID = val
+}
+
 // SetRevealable sets the value of Revealable.
 func (s *UpdateSshKeyRequest) SetRevealable(val OptBool) {
 	s.Revealable = val
@@ -5296,15 +6000,20 @@ func (s *UpdateSshKeyRequest) SetPassphrase(val OptString) {
 
 // Ref: #/components/schemas/UpdateTlsCertificateRequest
 type UpdateTlsCertificateRequest struct {
-	Name           OptString      `json:"name"`
-	Description    OptString      `json:"description"`
-	Tags           []string       `json:"tags"`
-	Revealable     OptBool        `json:"revealable"`
-	ClearExpiresAt OptBool        `json:"clear_expires_at"`
-	ExpiresAt      OptNilDateTime `json:"expires_at"`
-	Certificate    OptString      `json:"certificate"`
-	PrivateKey     OptString      `json:"private_key"`
-	CaCertificate  OptString      `json:"ca_certificate"`
+	Name        OptString `json:"name"`
+	Description OptString `json:"description"`
+	Tags        []string  `json:"tags"`
+	// Optional controller or service identifier managing this secret (for example, `terraform`). The
+	// `leaflow.` prefix is reserved for platform-managed secrets.
+	ManagedBy OptNilString `json:"managed_by"`
+	// Optional resource identifier within the managing service. Requires `managed_by` to be set.
+	ManagedResourceID OptNilString   `json:"managed_resource_id"`
+	Revealable        OptBool        `json:"revealable"`
+	ClearExpiresAt    OptBool        `json:"clear_expires_at"`
+	ExpiresAt         OptNilDateTime `json:"expires_at"`
+	Certificate       OptString      `json:"certificate"`
+	PrivateKey        OptString      `json:"private_key"`
+	CaCertificate     OptString      `json:"ca_certificate"`
 }
 
 // GetName returns the value of Name.
@@ -5320,6 +6029,16 @@ func (s *UpdateTlsCertificateRequest) GetDescription() OptString {
 // GetTags returns the value of Tags.
 func (s *UpdateTlsCertificateRequest) GetTags() []string {
 	return s.Tags
+}
+
+// GetManagedBy returns the value of ManagedBy.
+func (s *UpdateTlsCertificateRequest) GetManagedBy() OptNilString {
+	return s.ManagedBy
+}
+
+// GetManagedResourceID returns the value of ManagedResourceID.
+func (s *UpdateTlsCertificateRequest) GetManagedResourceID() OptNilString {
+	return s.ManagedResourceID
 }
 
 // GetRevealable returns the value of Revealable.
@@ -5365,6 +6084,16 @@ func (s *UpdateTlsCertificateRequest) SetDescription(val OptString) {
 // SetTags sets the value of Tags.
 func (s *UpdateTlsCertificateRequest) SetTags(val []string) {
 	s.Tags = val
+}
+
+// SetManagedBy sets the value of ManagedBy.
+func (s *UpdateTlsCertificateRequest) SetManagedBy(val OptNilString) {
+	s.ManagedBy = val
+}
+
+// SetManagedResourceID sets the value of ManagedResourceID.
+func (s *UpdateTlsCertificateRequest) SetManagedResourceID(val OptNilString) {
+	s.ManagedResourceID = val
 }
 
 // SetRevealable sets the value of Revealable.
